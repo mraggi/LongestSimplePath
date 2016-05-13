@@ -75,6 +75,11 @@ void DiGraph::add_edge(node_t from, node_t to, weight_t weight)
 	m_processed = false;
 }
 
+void DiGraph::add_edge(const string& from, const string& to, weight_t weight)
+{
+    add_edge(m_namemap[from],m_namemap[to],weight);
+}
+
 
 void DiGraph::process()
 {
@@ -101,7 +106,17 @@ void DiGraph::process()
 
 Path DiGraph::dfs_search(double maxnumseconds) const
 {
-    Path A = dfs_search_path_forward(m_basic_topological_ordering[0],maxnumseconds);
+    auto bestrank = rank_ex(m_basic_topological_ordering[0]);
+    node_t i = 0;
+    Path A(this,0);
+    while (i < 5 && i < num_vertices() && rank_ex(m_basic_topological_ordering[i]) == bestrank)
+    {
+        Path P = dfs_search_path_forward(m_basic_topological_ordering[i],maxnumseconds);
+        if (P.Value() > A.Value())
+            A = P;
+        ++i;
+    }
+    for (int i = 0; i < 15; ++i) A.PopFront();
 	dfs_search_path_reverse(A,maxnumseconds/5.0);
     return A;
 }
@@ -815,13 +830,14 @@ DiGraph DiGraph::CreateRandomDiGraph(int n, double p)
 	
 	for (int i = 0; i < n; ++i)
 	{
-		for (int j = 0; j < n; ++j)
+		for (int j = i+1; j < n; ++j)
 		{
-			if (i == j) continue;
 			if (probability_of_true(p))
 			{
-// 				auto w = random_real(1.0,3.0);
-				D.add_edge(i,j);
+				int a = i;
+				int b = j;
+				if (rand()%2 == 1) swap(a,b);
+				D.add_edge(a,b);
 			}
 		}
 	}
@@ -865,3 +881,19 @@ std::ostream& operator<<(std::ostream& os, const ParamType& a)
 	os << endl;
 	return os;
 }
+
+std::ostream& operator<<(std::ostream& os, const DiGraph& M)
+{
+    cout << "Digraph on " << M.num_vertices() << " vertices: " << M.get_vertex_names() << endl;
+    for (int i = 0; i < M.num_vertices(); ++i)
+    {
+        string name = M.get_vertex_name(i);
+        for (auto v : M.exneighbors(i))
+        {
+            string vname = M.get_vertex_name(v);
+            os << name << u8" ⟼ " << vname << " with weight " << double(M.edge_value(i,v)) << endl;
+        }
+    }
+    return os;
+}
+

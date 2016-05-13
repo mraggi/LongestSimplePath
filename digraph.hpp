@@ -39,6 +39,7 @@ public:
 
 	//		Graph modification functions
 	void add_edge(node_t from, node_t to, weight_t weight = 1);
+	void add_edge(const string& from, const string& to, weight_t weight = 1);
 	
 	// Find connected components, heuristics, etc.
 	void process(); // WARNING! Since it removes and renames nodes, after "processing" your nodes might have been renamed!
