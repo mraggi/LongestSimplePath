@@ -104,20 +104,27 @@ void DiGraph::process()
 	}
 }
 
-Path DiGraph::dfs_search(double maxnumseconds) const
+Path DiGraph::dfs_search(double maxnumsecondswithoutimprovement) const
 {
-    auto bestrank = rank_ex(m_basic_topological_ordering[0]);
-    node_t i = 0;
-    Path A(this,0);
-    while (i < 5 && i < num_vertices() && rank_ex(m_basic_topological_ordering[i]) == bestrank)
+    clock_t start = clock();
+    Path A = dfs_search_path_forward(m_basic_topological_ordering[0],maxnumsecondswithoutimprovement);
+    node_t i = 1;
+    double totaltime = 5*maxnumsecondswithoutimprovement;
+    double timeleft = totaltime - diffclock(clock(),start);
+    while (i < num_vertices() && timeleft > maxnumsecondswithoutimprovement)
     {
-        Path P = dfs_search_path_forward(m_basic_topological_ordering[i],maxnumseconds);
+        Path P = dfs_search_path_forward(m_basic_topological_ordering[i],maxnumsecondswithoutimprovement);
         if (P.Value() > A.Value())
             A = P;
         ++i;
+        timeleft = totaltime - diffclock(clock(),start);
     }
+    Path P = A;
     for (int i = 0; i < 15; ++i) A.PopFront();
-	dfs_search_path_reverse(A,maxnumseconds/5.0);
+	dfs_search_path_reverse(A,maxnumsecondswithoutimprovement/3.0);
+    if (P.Value() > A.Value())
+        A = P;
+    
     return A;
 }
 

@@ -26,13 +26,19 @@ Vertices can be named too:
     G.add_edge("F","G",2);
     
     cout << G << endl;
-    Path PG = G.FindLongestSimplePath(8.0);
+    Path PG = G.FindLongestSimplePath(1.0);
     
     cout << "The best path I found in one second has value " << PG.Value() << " and is " << PG << endl;
 ```
 
-# Note
+Of course, this program is not optimized at all for small graphs, but for large (~10,000 vertices) graphs. It will consume the second it has trying to improve something that can't be improved...
+
+# Note 1
 Graph D gets modified when calling FindLongestSimplePath, so beware. The problem is that we erase nodes in "small" connected components. If possible, make sure D is (weakly) connected. Else, the program will only focus on the largest (weakly) connected component. For example, is you have two components: A->B->C and D->E, but weight of D->E is 1000 and weight of A->B and B->C are both 1, it will ignore the D->E, since it's a small component. For most graphs this doesn't matter, since the longest path will likely be in the largest connected component.
+
+# Improving your results
+
+It's very likely you can improve your results. Many choices were made in order to improve stability of the algorithm (i.e. repeat some searches a few times, and so on) that can be removed and in most cases work better, but are easier to "trick".
 
 # The method
 

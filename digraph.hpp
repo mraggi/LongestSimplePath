@@ -87,7 +87,7 @@ public:
 	Path dfs_search_path_forward(node_t start, double maxnumseconds) const;
 	Path dfs_search_path_reverse(node_t start, double maxnumseconds) const;
 
-	Path dfs_search(double maxnumseconds) const;
+	Path dfs_search(double maxnumsecondswithoutimprovement) const;
     void pto_search(Path& A, double maxnumseconds) const;
     
 	// gets a random path, by shuffling the exgraph and ingraph orders

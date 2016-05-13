@@ -23,7 +23,7 @@ int main()
     G.add_edge("F","G",2);
     
     cout << G << endl;
-    Path PG = G.FindLongestSimplePath(8.0);
+    Path PG = G.FindLongestSimplePath(0.5);
     
     cout << "The best path I found in one second has value " << PG.Value() << " and is " << PG << endl;
 
