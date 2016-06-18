@@ -42,7 +42,7 @@ template <class T>
 		return os;
 	}
 	
-	
+	/*
 template <class T>
 class SquareSparseMatrix
 {
@@ -96,13 +96,13 @@ std::ostream& operator<<(std::ostream& os, const SquareSparseMatrix<T>& M)
 		os << endl;
 	}
 	return os;
-}
+}*/
 
-inline double diffclock(clock_t a, clock_t b)
-{
-	const double c = 1.0/CLOCKS_PER_SEC;
-	return double(a-b)*c;
-}
+// inline double diffclock(clock_t a, clock_t b)
+// {
+// 	const double c = 1.0/CLOCKS_PER_SEC;
+// 	return double(a-b)*c;
+// }
 
 typedef std::chrono::time_point<std::chrono::high_resolution_clock> clockt;
 
@@ -113,30 +113,36 @@ inline double diffclockt(clockt a, clockt b)
 	return std::chrono::duration_cast<std::chrono::microseconds>(a-b).count()*t;
 }
 
-class RClock
+class Chronometer
 {
 public:
-	static RClock& Instance()
+	Chronometer() : m_timer(std::chrono::high_resolution_clock::now()) {}
+	
+	double Reset()
 	{
-		static RClock A;
-		return A;
+		auto tlast = m_timer;
+		m_timer = std::chrono::high_resolution_clock::now();
+	
+		return diffclockt(m_timer, tlast);
 	}
 	
-	std::chrono::time_point<std::chrono::high_resolution_clock> start_timer;
-	std::chrono::time_point<std::chrono::high_resolution_clock> running_timer;
+	double Peek() const
+	{
+		auto tnow = std::chrono::high_resolution_clock::now();
 	
+		return diffclockt(tnow, m_timer);
+	}
 	
-private:
-	RClock() : start_timer(std::chrono::high_resolution_clock::now()), running_timer(std::chrono::high_resolution_clock::now()) {}
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_timer;
 };
 
 inline double TimeFromStart()
 {
-	auto tnow = std::chrono::high_resolution_clock::now();
-	
-	return diffclockt(tnow, RClock::Instance().start_timer);
+	static Chronometer C;
+	return C.Peek();
 }
 
+/*
 inline double Chronometer()
 {
 	auto tlast = RClock::Instance().running_timer;
@@ -147,7 +153,7 @@ inline double Chronometer()
 inline double ChronometerPeek()
 {
 	return diffclockt(std::chrono::high_resolution_clock::now(),RClock::Instance().running_timer);
-}
+}*/
 
 inline std::default_random_engine & random_engine()
 {

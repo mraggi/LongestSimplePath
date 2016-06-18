@@ -29,7 +29,7 @@ void PseudoTopoOrder::apply(const Path& P)
 	for (int i = 0; i < n; ++i)
 	{
 		int x = pto[i];
-		if (P.IsNodeInPath(x))
+		if (P.is_node_in_path(x))
 		{
 			if (fu == -1)
 				fu = i;
@@ -75,12 +75,12 @@ Path PseudoTopoOrder::get_path()
 {
 	FillPath();
 // 	cout << "Filling path, with value: " << Value() << endl;
-	deque<node_t> P;
+	Path P(size());
 	for (auto i : m_path)
 	{
-		P.push_front(pto[i]);
+		P.emplace_front(pto[i],i.Weight());
 	}
-	return Path(&m_parent, P, Value());
+	return P;
 }
 
 void PseudoTopoOrder::FillDP()
@@ -101,7 +101,7 @@ void PseudoTopoOrder::FillDP()
 			auto j = pto_inverse[v];
 			if (first_unknown < j) // should be ignored
 				continue;
-			auto candidate = dynamic_programming[j] + m_parent.edge_value(v,u);
+			auto candidate = dynamic_programming[j] + v.Weight();
 			if (candidate > dynamic_programming[first_unknown])
 			{
 				dynamic_programming[first_unknown] = candidate;
@@ -175,7 +175,7 @@ void PseudoTopoOrder::heuristic_sort(int a, int b, int numtimes)
 	for (int r = b-1; r != a; --r)
 	{
 		node_t node = pto[r];
-		int iu = get_exneighbor_in_range(a,r,node);
+		int iu = get_outneighbor_in_range(a,r,node);
 		if (iu != -1)
 			transpose(iu,r);
 	}
@@ -184,15 +184,15 @@ void PseudoTopoOrder::heuristic_sort(int a, int b, int numtimes)
 	{
 		int r = rand()%(b-a)+a;
 		node_t node = pto[r];
-		int iu = get_exneighbor_in_range(a,r,node);
+		int iu = get_outneighbor_in_range(a,r,node);
 		if (iu != -1)
 			transpose(iu,r);
 	}
 }
 
-int PseudoTopoOrder::get_exneighbor_in_range(int a, int b, node_t node)
+int PseudoTopoOrder::get_outneighbor_in_range(int a, int b, node_t node)
 {
-	for (auto u : m_parent.exneighbors(node))
+	for (auto u : m_parent.outneighbors(node))
 	{
 		int iu = pto_inverse[u];
 		if (a <= iu && iu < b)
@@ -214,7 +214,7 @@ bool PseudoTopoOrder::eXtreme_edge_opener()
 			continue;
 		
 		// true true true *false false
-		auto f = std::partition_point(m_path.rbegin(), m_path.rend(), [this,a](int i) -> bool
+		auto f = std::partition_point(m_path.rbegin(), m_path.rend(), [this,a](node_t i) -> bool
 		{
 			return i < a;
 		});
@@ -260,8 +260,8 @@ bool PseudoTopoOrder::eXtreme_edge_opener()
 
 void PseudoTopoOrder::open_edges_until_no_more_improvement_found(double maxnumseconds)
 {
-	clock_t start = clock();
-	while (diffclock(clock(),start) < maxnumseconds)
+	Chronometer C;
+	while (C.Peek() < maxnumseconds)
 	{
 		eXtreme_edge_opener();
 	}
@@ -275,30 +275,32 @@ void PseudoTopoOrder::FillPath()
 	m_path.clear();
 	FillDP();
 	auto m = Value();
+	weight_t currweight = 0;
 	int a = best_index;
-	
+	path_filled = true;
+
 	while (true)
 	{
 		bool found = false;
 // 		cout << "toret = " << toReturn << endl;
 		node_t u = pto[a];
-		m_path.push_back(a);
+		m_path.emplace_back(a,currweight);
 		for (auto v : m_parent.inneighbors(u))
 		{
 			node_t b = pto_inverse[v];
 			if (b > a)
 				continue;
-			if (dynamic_programming[b] == dynamic_programming[a] - m_parent.edge_value(v,u))
+			if (dynamic_programming[b] == dynamic_programming[a] - v.Weight())
 			{
 				a = b;
 				m = dynamic_programming[b];
+				currweight = v.Weight();
 				found = true;
 				break;
 			}
 		}
 		if (!found)
 		{
-			path_filled = true;
 			return;
 		}
 	}

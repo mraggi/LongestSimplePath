@@ -14,18 +14,18 @@ int main()
 	
     DiGraph G({"A","B","C","D","E","F","G","H"});
     
-    G.add_edge("A","B",5);
+    G.add_edge("A","B",7);
     G.add_edge("B","C",2);
     G.add_edge("C","A",3);
     G.add_edge("C","D",4);
-    G.add_edge("D","E",1);
+    G.add_edge("D","E",4);
     G.add_edge("B","F",3);
     G.add_edge("F","G",2);
     
     cout << G << endl;
     Path PG = G.FindLongestSimplePath(0.5);
     
-    cout << "The best path I found in one second has value " << PG.Value() << " and is " << PG << endl;
+    cout << "The best path I found in one second has value " << PG.value() << endl;
 
     
     int n = 1000;
@@ -45,7 +45,7 @@ int main()
     Path P = D.FindLongestSimplePath(numsecondstosearch);
     cout << " done!" << endl;
     
-    cout << "The best path I found in one second has value " << P.Value() << " and is " << P << endl;
+    cout << "The best path I found in one second has value " << P.value() << endl;
 	
     
     

@@ -16,6 +16,8 @@ public:
 	m_path(),
 	m_parent(m) {}
 
+	size_t size() const { return dynamic_programming.size(); }
+	
 	inline void set(int i, int v)
 	{
 		pto[i] = v;
@@ -54,7 +56,7 @@ public:
 	
 	// sorts range from a to b (must be same scc) according to a heuristic so as to maximize the improvement chance.
 	void heuristic_sort(int a, int b, int numtimes);
-	int get_exneighbor_in_range(int a, int b, node_t node);
+	int get_outneighbor_in_range(int a, int b, node_t node);
 
 private:
 	void FillDP();
@@ -81,6 +83,6 @@ private:
 	int best_index;
 	int first_unknown;
 	bool path_filled;
-	vector<node_t> m_path; //Path is filled with indices in REVERSE ORDER
+	vector<NeighborNode> m_path; //Path is filled with indices in REVERSE ORDER
 	const DiGraph& m_parent;
 };

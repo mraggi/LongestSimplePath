@@ -2,6 +2,7 @@
 #include "path.hpp"
 #include "pseudotopoorder.hpp"
 #include <sstream>
+#include <unordered_set>
 
 template <class T>
 vector<T> sorted(vector<T> V)
@@ -10,7 +11,7 @@ vector<T> sorted(vector<T> V)
     return V;
 }
 
-MovieGraph::MovieGraph(const vector< string >& mvnames) : 	DiGraph(sorted(mvnames))
+MovieGraph::MovieGraph(const vector< string >& mvnames) : 	DiGraph(mvnames)
 {
 	for (node_t i = 0; i < m_n; ++i)
 	{
@@ -23,6 +24,7 @@ MovieGraph::MovieGraph(const vector< string >& mvnames) : 	DiGraph(sorted(mvname
 
 void MovieGraph::add_links(size_t i)
 {
+	unordered_set<node_t> alreadyadded;
 	const string& movie = get_vertex_name(i);
 	size_t length = movie.size();
 // 	cout << "Adding links to " << movie << " # = " << length <<endl;
@@ -39,10 +41,11 @@ void MovieGraph::add_links(size_t i)
 		auto V =  movies_that_start_with(movieend);
 		for (auto v : V)
 		{
-			if (m_edge_values(i,v) == 0 && v != i)
+			if (v != i && alreadyadded.count(v) == 0)
 			{
-				weight_t weight = (length+get_vertex_name(v).size())/2.0-movieend.size();
+				weight_t weight = (length+get_vertex_name(v).size())-movieend.size()*2;
 				add_edge(i,v,weight);
+				alreadyadded.insert(v);
 // 				cout << "\tadding edge: " << movienames[v] << " #= " << float(movienames[v].size()) << " -> with weight " << float(weight) << endl;
 			}
 		}

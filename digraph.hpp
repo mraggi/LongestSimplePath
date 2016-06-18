@@ -8,11 +8,9 @@
 #include <algorithm>
 #include <set>
 #include "helpers.hpp"
+#include "path.hpp"
 
-class DiGraph;
-class Path;
-class PseudoTopoOrder;
-
+ 
 using namespace std;
 
 struct SccInfo
@@ -22,14 +20,10 @@ struct SccInfo
 	int end;
 	int color;
 };
-
-typedef int node_t;
-typedef char weight_t; // Do NOT change this to float unless you know what you are doing: little errors give the impression it's not working.
-typedef int sumweight_t;
+class PseudoTopoOrder;
 
 using ParamType = std::array<double, 8>;
 
-const node_t INVALID_NODE = -1; //make sure it's supported and not a "common" node (like 0, 1, 2...)
 
 class DiGraph
 {
@@ -64,19 +58,19 @@ public:
         heuristic_processing();
     }
     
-	int rank_ex(node_t node) const { return m_scc_rank_ex[m_scc_coloring[node]]; }
+	int rank_out(node_t node) const { return m_scc_rank_out[m_scc_coloring[node]]; }
 	int rank_in(node_t node) const { return m_scc_rank_in[m_scc_coloring[node]]; }
 	
-	inline const vector<node_t>& exneighbors(node_t n) const { return m_exgraph[n]; }
-	inline const vector<node_t>& inneighbors(node_t n) const { return m_ingraph[n]; }
-	inline const weight_t edge_value(node_t from, node_t to) const { return m_edge_values(from,to); }
+	inline const vector<NeighborNode>& outneighbors(node_t n) const { return m_outgraph[n]; }
+	inline const vector<NeighborNode>& inneighbors(node_t n) const { return m_ingraph[n]; }
+// 	inline const weight_t edge_value(node_t from, node_t to) const { return m_edge_values(from,to); }
 	inline const vector<vector<node_t>> strongly_connected_components() const { return m_strongly_connected_components; }
 	inline const vector<SccInfo> big_scc() const { return m_scc_big_components; }
 	
-	// This is the order in which the exneighbors are sorted
+	// This is the order in which the outneighbors are sorted
 	inline bool ex_compare(node_t a, node_t b) const { return m_basic_topological_ordering_inverse[a] < m_basic_topological_ordering_inverse[b]; }
 
-	// This is the order in which the exneighbors are sorted
+	// This is the order in which the outneighbors are sorted
 	inline bool in_compare(node_t a, node_t b) const { return m_basic_topological_ordering_inverse_in[a] < m_basic_topological_ordering_inverse_in[b]; }
 	
 	// Functions related to paths
@@ -90,9 +84,6 @@ public:
 	Path dfs_search(double maxnumsecondswithoutimprovement) const;
     void pto_search(Path& A, double maxnumseconds) const;
     
-	// gets a random path, by shuffling the exgraph and ingraph orders
-	Path get_random_path(double maxnumseconds) const;
-	
 	PseudoTopoOrder get_random_pseudotopological_order() const;
 	//Paths
 	Path FindLongestSimplePath(double numseconds);
@@ -106,9 +97,12 @@ public:
 private:
     // Utils for creating the graph
 	void remove_bad_nodes();
-	void remove_nodes(const vector<node_t>& toRemove);
+	void remove_nodes(vector<node_t>& toRemove);
+	
+	DiGraph with_nodes_removed(vector<node_t>& toRemove) const;
+	
 	void heuristic_processing();
-	double get_heuristic_ex(node_t node);
+	double get_heuristic_out(node_t node);
 	double get_heuristic_in(node_t node);
 	
 // 	void branch_and_bound();
@@ -124,23 +118,22 @@ private:
 protected:
 	// DiGraph insides
 	node_t m_n;
-	vector<vector<node_t>> m_exgraph;
-	vector<vector<node_t>> m_ingraph;
-	SquareSparseMatrix<weight_t> m_edge_values;
+	vector<vector<NeighborNode>> m_outgraph;
+	vector<vector<NeighborNode>> m_ingraph;
 
 private:
 	bool m_processed;
 	// Connected Components
 	vector<vector<node_t>> m_strongly_connected_components;
 	vector<node_t> m_scc_coloring;
-	vector<node_t> m_scc_rank_ex; // This is the ex rank of the connected components
+	vector<node_t> m_scc_rank_out; // This is the ex rank of the connected components
 	vector<node_t> m_scc_rank_in; // This is the in rank of the connected components
 	
 	vector<short> m_weak_coloring;
 	vector<vector<node_t>> m_weakly_connected_components;
 
 	//Heuristics
-	vector<double> m_heuristic_ex;
+	vector<double> m_heuristic_out;
 	vector<double> m_heuristic_in;
 	
 	vector<node_t> m_basic_topological_ordering;
@@ -155,9 +148,75 @@ private:
     
     
     ParamType m_params {{-43,31,11,58,-4,23,43,45}};
+//     ParamType m_params {{1,4,16,64,1,4,16,64}};
     
 	friend class PseudoTopoOrder;
 };
 
 std::ostream& operator<<(std::ostream& os, const DiGraph& M);
 std::ostream& operator<<(std::ostream& os, const ParamType& a);
+
+
+
+void ExpandGreedyBack(const DiGraph& G, Path& P);
+
+
+void ExpandGreedyFront(const DiGraph& G, Path& P);
+
+template <class Compare>
+bool dfs_outnext(const DiGraph& G, Path& P, Compare comp)
+{
+    auto lastNode = P.back();
+    
+    auto Neighs = &G.outneighbors(lastNode);
+
+    auto t = P.first_not_explored(*Neighs);
+
+    while (t == INVALID_NODE && P.size() > 1) //this means all nodes in Neigh have been explored
+    {
+        lastNode = P.back();
+        P.pop_back();
+        int father = P.back();
+        Neighs = &G.outneighbors(father);
+        t = P.first_not_explored_binary(*Neighs,lastNode, comp);
+    }
+    if (t == INVALID_NODE)
+        return false; // this means we have finished DFS!!
+    P.push_back(t);
+	ExpandGreedyBack(G,P);
+    return true;
+}
+
+template <class Compare>
+bool dfs_innext(const DiGraph& G, Path& P, Compare comp)
+{
+    auto firstNode = P.front();
+    
+    auto Neighs = &G.inneighbors(firstNode);
+
+    auto t = P.first_not_explored(*Neighs);
+
+    while (t == INVALID_NODE && P.size() > 1) //this means all nodes in Neigh have been explored
+    {
+        firstNode = P.front();
+        P.pop_front();
+        int father = P.front();
+        Neighs = &G.inneighbors(father);
+        t = P.first_not_explored_binary(*Neighs,firstNode, comp);
+    }
+    if (t == INVALID_NODE)
+        return false; // this means we have finished DFS!!
+    P.push_front(t);
+	ExpandGreedyFront(G,P);
+    return true;
+}
+
+// inline bool dfs_outnext(const DiGraph& G, Path& P)
+// {
+//     return dfs_outnext(G,P,std::less<node_t>());
+// }
+// 
+// inline bool dfs_innext(const DiGraph& G, Path& P)
+// {
+//     return dfs_innext(G,P,std::less<node_t>());
+// }

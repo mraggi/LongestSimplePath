@@ -11,6 +11,6 @@ SET (CMAKE_OBJDUMP 		"/usr/bin/llvm-objdump")
 SET (CMAKE_RANLIB  		"/usr/bin/llvm-ranlib")
 
 add_definitions(-std=c++14)
-add_definitions(-Ofast)
+add_definitions(-O2)
 
-add_executable(lsp main.cpp moviegraph.cpp digraph.cpp path.cpp pseudotopoorder.cpp helpers.cpp trainer.cpp)
+add_executable(lsp main.cpp moviegraph.cpp digraph.cpp pseudotopoorder.cpp helpers.cpp trainer.cpp)

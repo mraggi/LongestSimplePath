@@ -7,17 +7,17 @@
 
 DiGraph::DiGraph(node_t numNodes) :
 			m_n(numNodes),
-			m_exgraph(numNodes),
+			m_outgraph(numNodes),
 			m_ingraph(numNodes),
-			m_edge_values(numNodes),
+// 			m_edge_values(numNodes),
 			m_processed(false),
 			m_strongly_connected_components(),
 			m_scc_coloring(),
-			m_scc_rank_ex(),
+			m_scc_rank_out(),
 			m_scc_rank_in(),
 			m_weak_coloring(),
 			m_weakly_connected_components(),
-			m_heuristic_ex(),
+			m_heuristic_out(),
 			m_heuristic_in(),
 			m_basic_topological_ordering(),
 			m_basic_topological_ordering_in(),
@@ -37,17 +37,17 @@ DiGraph::DiGraph(node_t numNodes) :
 
 DiGraph::DiGraph(const vector<string>& vnames) :
 			m_n(vnames.size()),
-			m_exgraph(vnames.size()),
+			m_outgraph(vnames.size()),
 			m_ingraph(vnames.size()),
-			m_edge_values(vnames.size()),
+// 			m_edge_values(vnames.size()),
 			m_processed(false),
 			m_strongly_connected_components(),
 			m_scc_coloring(),
-			m_scc_rank_ex(),
+			m_scc_rank_out(),
 			m_scc_rank_in(),
 			m_weak_coloring(),
 			m_weakly_connected_components(),
-			m_heuristic_ex(),
+			m_heuristic_out(),
 			m_heuristic_in(),
 			m_basic_topological_ordering(),
 			m_basic_topological_ordering_in(),
@@ -66,12 +66,12 @@ DiGraph::DiGraph(const vector<string>& vnames) :
 
 void DiGraph::add_edge(node_t from, node_t to, weight_t weight)
 {
-	if (m_edge_values(from,to) == 0)
-	{
-		m_exgraph[from].push_back(to);
-		m_ingraph[to].push_back(from);
-	}
-	m_edge_values(from,to) = weight;
+// 	if (m_edge_values(from,to) == 0)
+// 	{
+		m_outgraph[from].emplace_back(to,weight);
+		m_ingraph[to].emplace_back(from,weight);
+// 	}
+// 	m_edge_values(from,to) = weight;
 	m_processed = false;
 }
 
@@ -85,44 +85,55 @@ void DiGraph::process()
 {
 	if (!m_processed)
 	{
-		clock_t start = clock();
 // 		cout << "Processing graph..." << endl;
+		Chronometer C;
 		find_weakly_connected_components();
-// 		cout << "weak coloring = " << m_weak_coloring << endl;
+		cout << "weak coloring = " << m_weak_coloring << endl;
+		cout << "before removing, size: " << num_vertices() << endl;
 		remove_bad_nodes();
-// 		cout << "After removing, new size: " << m_n << endl;
+		cout << "After removing, new size: " << m_n << endl;
 		
 		find_strongly_connected_components();
 		
-// 		cout << "Scc: " << m_scc_coloring << endl;
+		cout << "Scc: " << m_scc_coloring << endl;
 		
 		heuristic_processing();
 		
-// 		cout << "Heuristic: " << m_heuristic_ex << endl;
+		cout << "Heuristic: " << m_heuristic_out << endl;
 		m_processed = true;
-// 		cout << "Finished processing after " << diffclock(clock(),start) << " seconds" << endl;
+		cout << "Finished processing graph after " << C.Peek() << " seconds" << endl;
 	}
 }
 
-Path DiGraph::dfs_search(double maxnumsecondswithoutimprovement) const
+Path DiGraph::dfs_search(double mnswi) const
 {
-    clock_t start = clock();
-    Path A = dfs_search_path_forward(m_basic_topological_ordering[0],maxnumsecondswithoutimprovement);
-    node_t i = 1;
-    double totaltime = 5*maxnumsecondswithoutimprovement;
-    double timeleft = totaltime - diffclock(clock(),start);
-    while (i < num_vertices() && timeleft > maxnumsecondswithoutimprovement)
+	Chronometer C;
+    Path A = dfs_search_path_forward(m_basic_topological_ordering[0],mnswi);
+	
+	// We now have to decide whether or not to perform other searches.
+	// This should be based both on the time I was given and the number of vertices of the graph.
+	// More time means more likely I'll do searches. More vertices should make it LESS likely that I'll do more searches.
+	
+	double score = 100*mnswi/log(2.0+num_vertices()) - C.Reset();
+	
+// 	cout << "score = " << score << endl;
+	
+	node_t i = 1;
+    while (i < num_vertices() && score > 1.0)
     {
-        Path P = dfs_search_path_forward(m_basic_topological_ordering[i],maxnumsecondswithoutimprovement);
-        if (P.Value() > A.Value())
+		cout << "Doing it with score = " << score << endl;
+        Path P = dfs_search_path_forward(m_basic_topological_ordering[i],mnswi);
+        if (P.value() > A.value())
             A = P;
         ++i;
-        timeleft = totaltime - diffclock(clock(),start);
+        score -= C.Reset();
     }
+    
+    // This should be done regardless of whether or not I did other searches.
     Path P = A;
-    for (int i = 0; i < 15; ++i) A.PopFront();
-	dfs_search_path_reverse(A,maxnumsecondswithoutimprovement/3.0);
-    if (P.Value() > A.Value())
+    for (int i = 0; i < 20; ++i) A.pop_front();
+	dfs_search_path_reverse(A,mnswi/3.0);
+    if (P.value() > A.value())
         A = P;
     
     return A;
@@ -131,19 +142,18 @@ Path DiGraph::dfs_search(double maxnumsecondswithoutimprovement) const
 
 Path DiGraph::FindLongestSimplePath(double numseconds)
 {
-	process(); // do this BEFORE starting the count.
+    Chronometer C;
+	process();
     
-    Chronometer();
-	clock_t start = clock();
 	
-	double dfstime = 0.07 + numseconds/50.0;
+	double dfstime = 0.008 + numseconds/20.0; 
 	
 	Path best = dfs_search(dfstime);
 	
-	double elapsed = diffclock(clock(),start);
-	double timeleft = numseconds-elapsed;
+	double timeleft = numseconds-C.Peek();
 	
-// 	cout << "Done DFS search! Value = " << best.Value() << endl;
+	cout << "Done DFS search! Value = " << best.value()/2 << endl;
+	cout << "Time taken for dfs: " << C.Peek() << endl;
 	
 	pto_search(best,timeleft);
 	
@@ -152,95 +162,84 @@ Path DiGraph::FindLongestSimplePath(double numseconds)
 
 void DiGraph::pto_search(Path& A, double maxnumseconds) const
 {
-   	clock_t start = clock();
-
+	Chronometer C;
+	
     PseudoTopoOrder PTO = get_random_pseudotopological_order();
-// 	cout << "Before applying A, PTO.Value() = " << PTO.Value() << endl;
+	cout << "Before applying A, PTO.Value() = " << PTO.Value()/2 << endl;
 	
 	PTO.apply(A);
 	
-// 	cout << "After applying A, PTO.Value() = " << PTO.Value() << endl;
-// 	cout << "(" << ChronometerPeek() << ", " << PTO.Value() << ")," << endl;
+	cout << "After applying A, PTO.Value() = " << PTO.Value()/2 << endl;
 
-	double timeleft = maxnumseconds-diffclock(clock(),start);
 // 	cout << "*****************After second DFS, I have " << timeleft << "s of time left" << endl;
 	
-	PTO.open_edges_until_no_more_improvement_found(min(timeleft,5.0));
+	PTO.open_edges_until_no_more_improvement_found(min(maxnumseconds,5.0));
 	
 // 	cout << "After opening edges, PTO.Value() = " << PTO.Value() << endl;
 	
-    if (A.Value() < PTO.Value())
+    if (A.value() < PTO.Value())
         A = PTO.get_path();
 	
-// 	cout << "which should be the same as the value of A: " << A.Value() << endl;
-	
-	timeleft = maxnumseconds-diffclock(clock(),start);
-
-// 	cout << "After opening edges, I have " << timeleft << "s of time left" << endl;
 	Path WA = A;
-	while (timeleft > 0.1)
+	while (C.Peek() < maxnumseconds)
 	{
 		int numtopop = rand()%8+8;
 		for (int i = 0; i < numtopop; ++i)
 		{
-			WA.PopBack();
-			WA.PopFront();
+			WA.pop_back();
+			WA.pop_front();
 		}
 		PTO.randomize();
 		PTO.apply(WA);
-		PTO.open_edges_until_no_more_improvement_found(min(timeleft,1.5));
-		if (PTO.Value() > A.Value())
+		PTO.open_edges_until_no_more_improvement_found(min(maxnumseconds-C.Peek(),1.5));
+		if (PTO.Value() > A.value())
 		{
 // 			cout << "holy shit, I advanced here to " << PTO.Value() << endl;
 			A = PTO.get_path();
 		}
 		WA = A;
-        timeleft = maxnumseconds-diffclock(clock(),start);
 	}
 }
 
-Path DiGraph::FindLongestSimplePathPureDFS(double numseconds)
-{
-	process();
-	
-	Path best(this,0);
-	
-	clock_t start = clock();
-	Chronometer();
-	
-	double dfstime = numseconds/2.05 - 0.1;
-	
-	Path A = dfs_search_path_forward(m_basic_topological_ordering[0],dfstime);
-// 	cout << "Done forward search! Value = " << A.Value() << endl;
-	
-	double elapsed = diffclock(clock(),start);
-	double timeleft = numseconds-elapsed;
-// 	cout << "After the first DFS, I have " << timeleft << "s of time left" << endl;
-	
-	if (timeleft > dfstime)
-	{
-		for (int i = 0; i < max(min(12,int(timeleft*20)),1); ++i) A.PopFront();
-		
-// 		cout << "Starting backward search" << endl;
-		dfs_search_path_reverse(A,dfstime);
-	}
-	
-	if (A.Value() > best.Value())
-		best = A;
-	
-	elapsed = diffclock(clock(),start);
-	timeleft = numseconds-elapsed;
-// 	cout << "After opening edges, I have " << timeleft << "s of time left" << endl;
-	
-	return best;
-}
+// Path DiGraph::FindLongestSimplePathPureDFS(double numseconds)
+// {
+// 	process();
+// 	
+// 	Path best(this,0);
+// 	
+// 	Chronometer C;
+// 	
+// 	double dfstime = numseconds/2.05 - 0.1;
+// 	
+// 	Path A = dfs_search_path_forward(m_basic_topological_ordering[0],dfstime);
+// // 	cout << "Done forward search! Value = " << A.Value() << endl;
+// 	
+// 	double timeleft = numseconds-C.Peek();
+// // 	cout << "After the first DFS, I have " << timeleft << "s of time left" << endl;
+// 	
+// 	if (timeleft > dfstime)
+// 	{
+// 		for (int i = 0; i < max(min(12,int(timeleft*20)),1); ++i) A.pop_front();
+// 		
+// // 		cout << "Starting backward search" << endl;
+// 		dfs_search_path_reverse(A,dfstime);
+// 	}
+// 	
+// 	if (A.Value() > best.Value())
+// 		best = A;
+// 	
+// 	timeleft = numseconds-C.Peek();
+// // 	cout << "After opening edges, I have " << timeleft << "s of time left" << endl;
+// 	
+// 	return best;
+// }
 
 size_t DiGraph::num_edges() const
 {
 	size_t toReturn = 0;
 	for (node_t i = 0; i < m_n; ++i)
 	{
-		toReturn += m_exgraph[i].size();
+		toReturn += m_outgraph[i].size();
 	}
 	return toReturn;
 }
@@ -270,45 +269,43 @@ void DiGraph::remove_bad_nodes()
 		}
 	}
 // 	cout << "done adding toremove! sorting..." << endl;
-	sort(toRemove.begin(), toRemove.end());
+// 	sort(toRemove.begin(), toRemove.end());
 	
 // 	for (int i = 0; i < n; ++i)
 // 	{
-// 		if (exgraph[i].size() == 0 && ingraph[i].size() == 0)
+// 		if (outgraph[i].size() == 0 && ingraph[i].size() == 0)
 // 			toRemove.push_back(i);
 // 	}
 // 	cout << "Removing: " << toRemove.size() << " nodes" << endl;
 	remove_nodes(toRemove);
 }
 
-void DiGraph::remove_nodes(const vector<node_t>& toRemove)
+
+DiGraph DiGraph::with_nodes_removed(vector<node_t>& toRemove) const
 {
-	if (toRemove.empty())
+    if (toRemove.empty())
 	{
-		return;
+		return *this;
 	}
+	sort(toRemove.begin(), toRemove.end());
 	
 	size_t new_n = m_n-toRemove.size();
-	
+// 	DiGraph D(new_n);
+	vector<string> new_names;
+	new_names.reserve(new_n);
+    
 	vector<node_t> removalfunction(m_n,INVALID_NODE);
 	vector<node_t> removalfunctioninverse(new_n,0);
 	
-	vector<string> new_movienames(new_n);
-	vector<vector<node_t>> new_exgraph(new_n);
-	vector<vector<node_t>> new_ingraph(new_n);
-	SquareSparseMatrix<weight_t> new_edge_values(new_n);
-    
-    vector<string> new_names(new_n);
-    unordered_map<string,node_t> new_namemap;
-    
-	int j = 0;
-	int w = 0;
+	node_t j = 0;
+	node_t w = 0;
 	for (node_t i = 0; i < m_n; ++i)
 	{
 		if (i != toRemove[w])
 		{
 			removalfunction[i] = j;
 			removalfunctioninverse[j] = i;
+			new_names.emplace_back(m_node_names[i]);
 			++j;
 		} else
 		{
@@ -316,82 +313,88 @@ void DiGraph::remove_nodes(const vector<node_t>& toRemove)
 		}
 	}
 	
-	for (node_t j = 0; j < new_n; ++j)
-	{
-		auto i = removalfunctioninverse[j];
-        new_names[j] = m_node_names[i];
-        new_namemap[new_names[j]] = j;
-		for (auto x : m_exgraph[i])
-		{
-			auto new_x = removalfunction[x];
-			new_exgraph[j].push_back(new_x);
-			new_ingraph[new_x].push_back(j);
-			new_edge_values(j,new_x) = m_edge_values(i,x);
-		}
-	}
-// 	cout << "Finished setting exgraph and ingraph. Copying..." << endl;
-	m_n = new_n;
-	m_exgraph = std::move(new_exgraph);
-	m_ingraph = std::move(new_ingraph);
-	m_edge_values = std::move(new_edge_values);
-    m_node_names = std::move(new_names);
-    m_namemap = std::move(new_namemap);
+	DiGraph D(new_names);
+	
+	for (node_t v = 0; v < new_n; ++v)
+    {
+        auto oldv = removalfunctioninverse[v];
+        for (auto oldneigh : outneighbors(oldv))
+        {
+            auto newneigh = removalfunction[oldneigh];
+            D.add_edge(v,newneigh,oldneigh.Weight());
+        }
+    }
+    return D;
+}
+
+void DiGraph::remove_nodes(vector<node_t>& toRemove)
+{
+	*this = with_nodes_removed(toRemove);
 }
 
 void DiGraph::dfs_search_path_forward(Path& P, double maxnumseconds) const
 {
-	P.ExpandGreedyBack();
+	ExpandGreedyBack(*this,P);
 // 	cout << "(" << ChronometerPeek() << ", " << P.Value() << ")," << endl;
 	
-	clock_t start = clock();
+	Chronometer C;
 	Path Q = P;
-	while (diffclock(clock(),start) < maxnumseconds && Q.DFSBackNext())
+	auto comp = [this](node_t a, node_t b)
 	{
-		if (Q.Value() > P.Value())
+		return ex_compare(a,b);
+	};
+	while (C.Peek() < maxnumseconds && dfs_outnext(*this,Q,comp))
+	{
+		if (Q.value() > P.value())
 		{
 			P = Q;
-			start = clock();
-// 			cout << "(" << ChronometerPeek() << ", " << P.Value() << ")," << endl;
+			C.Reset();
+// 			cout << "(" << C.Peek() << ", " << P.value() << ")," << endl;
+			cout << P.value()/2 << endl;
 		}
 	}
 }
 
 void DiGraph::dfs_search_path_reverse(Path& P, double maxnumseconds) const
 {
-	P.ExpandGreedyFront();
+	ExpandGreedyBack(*this,P);
 // 	cout << "(" << ChronometerPeek() << ", " << P.Value() << ")," << endl;
 	
-	clock_t start = clock();
+	Chronometer C;
 	Path Q = P;
-	while (diffclock(clock(),start) < maxnumseconds && Q.DFSFrontNext())
+	auto comp = [this](node_t a, node_t b)
 	{
-		if (Q.Value() > P.Value())
+		return in_compare(a,b);
+	};
+	while (C.Peek() < maxnumseconds && dfs_innext(*this,Q,comp))
+	{
+		if (Q.value() > P.value())
 		{
 			P = Q;
-			start = clock();
+			C.Reset();
 // 			cout << "(" << ChronometerPeek() << ", " << P.Value() << ")," << endl;
-
+			cout << P.value()/2 << endl;
 		}
 	}
 }
 
 Path DiGraph::dfs_search_path_forward(node_t start, double maxnumseconds) const
 {
-	Path P(this,start);
+	Path P(num_vertices(),start);
 	dfs_search_path_forward(P,maxnumseconds);
 	return P;
 }
 
 Path DiGraph::dfs_search_path_reverse(node_t start, double maxnumseconds) const
 {
-	Path P(this,start);
+	Path P(num_vertices(),start);
 	dfs_search_path_reverse(P,maxnumseconds);
 	return P;
 }
 
 void DiGraph::heuristic_processing()
 {
-	m_heuristic_ex.resize(m_n,0);
+	m_heuristic_out.resize(m_n,0);
 	m_heuristic_in.resize(m_n,0);
 	
 	// 	double maxtime = 0.2/n;
@@ -399,7 +402,7 @@ void DiGraph::heuristic_processing()
 // 	#pragma omp parallel for
 	for (node_t i = 0; i < m_n; ++i)
 	{
-		m_heuristic_ex[i] = get_heuristic_ex(i);
+		m_heuristic_out[i] = get_heuristic_out(i);
 		m_heuristic_in[i] = get_heuristic_in(i);
 	}
 
@@ -407,30 +410,30 @@ void DiGraph::heuristic_processing()
 	m_basic_topological_ordering = range<node_t>(m_n);
 	sort (m_basic_topological_ordering.begin(), m_basic_topological_ordering.end(), [this](node_t a, node_t b) -> bool
 	{
-		if (rank_ex(a) > rank_ex(b))
+		if (rank_out(a) > rank_out(b))
 			return true;
-		if (rank_ex(a) < rank_ex(b))
+		if (rank_out(a) < rank_out(b))
 			return false;
 		
-// 		if (m_heuristic_ex[a] == 0 && m_heuristic_ex[b] == 0)
+// 		if (m_heuristic_out[a] == 0 && m_heuristic_out[b] == 0)
 // 		{
 // 			return m_vertex_values[a] > m_vertex_values[b];
 // 		}
 		
-		if (m_heuristic_ex[a] == 0)
+		if (m_heuristic_out[a] == 0)
 			return false;
-		if (m_heuristic_ex[b] == 0)
+		if (m_heuristic_out[b] == 0)
 			return true;
 		
 // 		if (ingraph[a].size() == 1 && ingraph[b].size() == 1)
-// 			return heuristic_ex[a] < heuristic_ex[b];
+// 			return heuristic_out[a] < heuristic_out[b];
 		
 		if (m_ingraph[a].size() == 1 )
 			return true;
 		if (m_ingraph[b].size() == 1)
 			return false;
 		
-		return m_heuristic_ex[a] < m_heuristic_ex[b];
+		return m_heuristic_out[a] < m_heuristic_out[b];
 	});
 // 	random_shuffle(basic_topological_ordering.begin(), basic_topological_ordering.end());
 	m_basic_topological_ordering_inverse.resize(m_n);
@@ -458,11 +461,11 @@ void DiGraph::heuristic_processing()
 			return true;
 		
 // 		if (ingraph[a].size() == 1 && ingraph[b].size() == 1)
-// 			return heuristic_ex[a] < heuristic_ex[b];
+// 			return heuristic_out[a] < heuristic_out[b];
 		
-		if (m_exgraph[a].size() == 1 )
+		if (m_outgraph[a].size() == 1 )
 			return true;
-		if (m_exgraph[b].size() == 1)
+		if (m_outgraph[b].size() == 1)
 			return false;
 		
 		return m_heuristic_in[a] < m_heuristic_in[b];
@@ -477,9 +480,9 @@ void DiGraph::heuristic_processing()
 	
 	for (size_t i = 0; i < m_n; ++i)
 	{
-// 		random_shuffle(exgraph[i].begin(), exgraph[i].end());
+// 		random_shuffle(outgraph[i].begin(), outgraph[i].end());
 // 		random_shuffle(ingraph[i].begin(), ingraph[i].end());
-		sort(m_exgraph[i].begin(), m_exgraph[i].end(), [this] (node_t a, node_t b) -> bool
+		sort(m_outgraph[i].begin(), m_outgraph[i].end(), [this] (node_t a, node_t b) -> bool
 		{
 			return ex_compare(a,b);
 		});
@@ -492,11 +495,11 @@ void DiGraph::heuristic_processing()
 	
 }
 
-void DiGraph::DFSUtil(int v, vector<bool>& visited)
+void DiGraph::DFSUtil(node_t v, vector<bool>& visited)
 {
     visited[v] = true;
  
-    for (auto i : m_exgraph[v])
+    for (auto i : m_outgraph[v])
 	{
         if (!visited[i])
             DFSUtil(i, visited);
@@ -504,7 +507,7 @@ void DiGraph::DFSUtil(int v, vector<bool>& visited)
 }
  
  
- void DiGraph::DFSUtilReversed(int v, vector< char >& visited, int current)
+ void DiGraph::DFSUtilReversed(node_t v, vector< char >& visited, int current)
 {
     visited[v] = true;
 // 	cout << " v = " << v << " and current = " << current << " and scc.size() = " << strongly_connected_components.size() << endl;
@@ -519,13 +522,13 @@ void DiGraph::DFSUtil(int v, vector<bool>& visited)
 }
  
  
-void DiGraph::topo_fill_order(int v, vector< char >& visited, stack< node_t >& Stack)
+void DiGraph::topo_fill_order(node_t v, vector< char >& visited, stack< node_t >& Stack)
 {
     // Mark the current node as visited and print it
     visited[v] = true;
  
-    // Recur for all the vertices exgraphacent to this vertex
-    for(auto i : m_exgraph[v])
+    // Recur for all the vertices outgraphacent to this vertex
+    for(auto i : m_outgraph[v])
         if(!visited[i])
             topo_fill_order(i, visited, Stack);
  
@@ -598,22 +601,22 @@ void DiGraph::find_strongly_connected_components()
 	
 // 	cout << "Finished with this weird loop." << endl;
 	
-	m_scc_rank_ex.resize(num_scc,0);
+	m_scc_rank_out.resize(num_scc,0);
 
 	for (int scc = num_scc-1; scc >= 0; --scc)
 	{
 		for (int x : m_strongly_connected_components[scc])
 		{
 			// x is the actual node in the scc component
-			for (auto v : m_exgraph[x])
+			for (auto v : m_outgraph[x])
 			{
 				//v is the actual node in the scc component
 				int connected_component_neigh = m_scc_coloring[v];
 				if (connected_component_neigh == scc)
 					continue;
-				int candidate = m_scc_rank_ex[connected_component_neigh] + 1;
-				if (candidate > m_scc_rank_ex[scc])
-					m_scc_rank_ex[scc] = candidate;
+				int candidate = m_scc_rank_out[connected_component_neigh] + 1;
+				if (candidate > m_scc_rank_out[scc])
+					m_scc_rank_out[scc] = candidate;
 			}
 		}
 	}
@@ -650,7 +653,7 @@ void DiGraph::find_strongly_connected_components()
 // 	}
 	
 // 	cout << "out of..." << m_strongly_connected_components.size();
-// 	cout << "scc_rank_ex = " << m_scc_rank_ex << endl;
+// 	cout << "scc_rank_out = " << m_scc_rank_out << endl;
 	
 }
 
@@ -672,12 +675,12 @@ PseudoTopoOrder DiGraph::get_random_pseudotopological_order() const
 	return PseudoTopoOrder(*this, std::move(topo_sort),std::move(topo_sort_inverse));
 }
 
-void DiGraph::DFSUtilWeak(int node, int color)
+void DiGraph::DFSUtilWeak(node_t node, int color)
 {
 	m_weak_coloring[node] = color;
 	m_weakly_connected_components.back().push_back(node);
 // 	m_weakly_connected_components_values.back() += vertex_values[node]-1;
-	for (auto x : m_exgraph[node])
+	for (auto x : m_outgraph[node])
 	{
 		if (m_weak_coloring[x] != -1)
 			continue;
@@ -713,7 +716,7 @@ void DiGraph::find_weakly_connected_components()
 }
 
 
-double DiGraph::get_heuristic_ex(int node)
+double DiGraph::get_heuristic_out(node_t node)
 {
     double a1 = m_params[0];
 	double a2 = m_params[1];
@@ -721,18 +724,18 @@ double DiGraph::get_heuristic_ex(int node)
 	double a4 = m_params[3];
 	double heuristicex = 0;
 	
-	for (auto x : m_exgraph[node])
+	for (auto x : m_outgraph[node])
 	{
 		heuristicex += a1;
-		for (auto y : m_exgraph[x])
+		for (auto y : m_outgraph[x])
 		{
 			heuristicex += a2;
-			for (auto z : m_exgraph[y])
+			for (auto z : m_outgraph[y])
 			{
-				heuristicex += a3+a4*m_exgraph[z].size();
-// 				for (auto r : exgraph[z])
+				heuristicex += a3+a4*m_outgraph[z].size();
+// 				for (auto r : outgraph[z])
 // 				{
-// 					heuristicex += a4+a5*exgraph[r]./*size()*/;
+// 					heuristicex += a4+a5*outgraph[r]./*size()*/;
 // 				}
 			}
 		}
@@ -741,7 +744,7 @@ double DiGraph::get_heuristic_ex(int node)
 }
 
 
-double DiGraph::get_heuristic_in(int node)
+double DiGraph::get_heuristic_in(node_t node)
 {
 // 	return 0;
 	double a1 = m_params[4];
@@ -763,72 +766,6 @@ double DiGraph::get_heuristic_in(int node)
 		}
 	}
 	return heuristicin;
-}
-
-Path DiGraph::get_random_path(double maxnumseconds) const
-{
-	node_t startnode = rand()%m_n;
-	Path trivial(this,startnode);
-	Path toReturn = trivial;
-
-	vector<Path> frontier = {trivial};
-	clock_t st = clock();
-	while (!frontier.empty() && diffclock(clock(), st) < 0.5*maxnumseconds)
-	{
-		Path P = frontier.back();
-		frontier.pop_back();
-		if (P.Value() > toReturn.Value())
-			toReturn = P;
-		
-		int lastnode = P.get_path().back();
-		auto exx = m_exgraph[lastnode];
-		random_shuffle(exx.begin(), exx.end());
-		sort(exx.begin(), exx.end(), [this](int a, int b) -> bool{
-			return m_scc_rank_ex[a] < m_scc_rank_ex[b];
-		});
-		for (auto x : exx)
-		{
-			if (P.IsNodeInPath(x) == false)
-			{
-				
-				Path PP = P;
-				PP.AddNodeBack(x);
-				frontier.push_back(PP);
-				
-			}
-		}
-	}
-// 	if (frontier.empty())
-// 	{
-// 		return get_random_path()(maxnumseconds-diffclock(clock(), st));
-// 	}
-	vector<Path> frontier2;
-	frontier2.push_back(toReturn);
-	while (!frontier2.empty() && diffclock(clock(), st) < maxnumseconds)
-	{
-		Path P = frontier2.back();
-		frontier2.pop_back();
-		if (P.Value() > toReturn.Value())
-			toReturn = P;
-		int lastnode = P.get_path().front();
-		auto inn = m_ingraph[lastnode];
-		random_shuffle(inn.begin(), inn.end());
-		sort(inn.begin(), inn.end(), [this](int a, int b) -> bool{
-			return m_scc_rank_in[a] < m_scc_rank_in[b];
-		});
-		for (auto x : inn)
-		{
-			if (P.IsNodeInPath(x) == false)
-			{
-				
-				Path PP = P;
-				PP.AddNodeFront(x);
-				frontier2.push_back(PP);
-			}
-		}
-	}
-	
-	return toReturn;
 }
 
 DiGraph DiGraph::CreateRandomDiGraph(int n, double p)
@@ -895,12 +832,40 @@ std::ostream& operator<<(std::ostream& os, const DiGraph& M)
     for (int i = 0; i < M.num_vertices(); ++i)
     {
         string name = M.get_vertex_name(i);
-        for (auto v : M.exneighbors(i))
+        for (auto v : M.outneighbors(i))
         {
             string vname = M.get_vertex_name(v);
-            os << name << u8" ⟼ " << vname << " with weight " << double(M.edge_value(i,v)) << endl;
+            os << name << u8" ⟼ " << vname << " with weight " << double(v.Weight()) << endl;
         }
     }
     return os;
 }
 
+void ExpandGreedyBack(const DiGraph& G, Path& P)
+{
+	while (true)
+	{
+		auto l = P.back();
+		auto& Neighs = G.outneighbors(l);
+		
+		auto t = P.first_not_explored(Neighs);
+		if (t == INVALID_NODE)
+			break;
+		P.emplace_back(t,t.Weight());
+	}
+}
+
+
+void ExpandGreedyFront(const DiGraph& G, Path& P)
+{
+	while (true)
+	{
+		auto l = P.front();
+		auto& Neighs = G.inneighbors(l);
+		
+		auto t = P.first_not_explored(Neighs);
+		if (t == INVALID_NODE)
+			break;
+		P.emplace_front(t,t.Weight());
+	}
+}
