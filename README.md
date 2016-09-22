@@ -43,3 +43,9 @@ It's very likely you can improve your results. Many choices were made in order t
 # The method
 
 The method it uses will be described in an upcoming research paper (in process), but it does a lot of things. You can also invite me to give a talk on this.
+
+# Acknowledgements
+
+Research supported in part by PAPIIT IA106316, UNAM.
+
+
