@@ -8,8 +8,8 @@ using namespace std;
 
 int main() 
 {
-	srand(time(nullptr));
-	randomize();
+// 	srand(time(nullptr));
+// 	randomize();
 	TimeFromStart(); // in order to create the timer. Doesn't matter much.
 	
     DiGraph G({"A","B","C","D","E","F","G","H"});
@@ -25,10 +25,10 @@ int main()
     cout << G << endl;
     Path PG = G.FindLongestSimplePath(0.5);
     
-    cout << "The best path I found in one second has value " << PG.value() << endl;
+    cout << "The best path I found in half a second has value " << PG.value() << endl;
 
     
-    int n = 1000;
+    int n = 1001;
     double p = log(double(n))/(1.0*n);
     
     cout << "Creating graph..." << flush;
@@ -40,14 +40,11 @@ int main()
     D.process();
     cout << " done!" << endl;
     
-    double numsecondstosearch = 1.0;
     cout << "Searching path...";    
-    Path P = D.FindLongestSimplePath(numsecondstosearch);
+    Path P = D.FindLongestSimplePath(1.0,0.05,4);
     cout << " done!" << endl;
     
-    cout << "The best path I found in one second has value " << P.value() << endl;
+    cout << "The best path I found has value " << P.value() << endl;
 	
-    
-    
     return 0;
 }

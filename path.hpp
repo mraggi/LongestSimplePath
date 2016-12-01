@@ -47,11 +47,15 @@ struct NeighborNode
 class Path
 {
 public:
-    Path(size_t n) : m_path(), m_explored(n), m_value(0) {}
+    Path() : m_path(), m_explored(), m_value(0) {}
+	
+	Path(size_t n) : m_path(), m_explored(n), m_value(0) {}
     Path(size_t n, node_t initialnode) : m_path(), m_explored(n), m_value(0) 
     {
         emplace_back(initialnode,0);
     }
+    
+    
     const deque<NeighborNode>& get_path() const { return m_path; }
     inline operator const deque<NeighborNode>&() const { return m_path; }
 //     inline operator vector<NeighborNode>&()  { return m_path; }
@@ -86,7 +90,7 @@ public:
     void push_front(NeighborNode v)
 	{
 //         swap(m_path.front().weight,v.weight);
-        assert(!m_path.empty() && "Use push_back when it's empty");
+        assert(!m_path.empty() && "Use push_front when it's empty");
         assert(v < m_explored.size());
         m_path.front().weight = v.weight;
         m_path.emplace_front(v,0);
@@ -97,9 +101,9 @@ public:
     void emplace_front(node_t node, weight_t weight = 1)
 	{
 //         auto w = m_path.front().weight;
-        assert(!m_path.empty() && "Use emplace_back when it's empty");
         assert(node < m_explored.size());
-		m_path.front().weight = weight;
+		if (!m_path.empty())
+			m_path.front().weight = weight;
 		m_path.emplace_front(node,0);
 		m_value += weight;
         ++m_explored[node];

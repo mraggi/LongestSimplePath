@@ -83,7 +83,7 @@ Individual Trainer::createIndividual(const ParamType& a) const
 	for (auto p : m_training_set)
 	{
 		p->set_parameters(a);
-		double val = p->dfs_search(maxnumsecondsperthingy).value();
+		double val = p->dfs_search(maxnumsecondsperthingy,2).value();
 		average += val;
 	}
 	average /= m_training_set.size();

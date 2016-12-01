@@ -7,6 +7,7 @@
 #include <chrono>
 #include <ctime>
 #include <random>
+#include <fstream>
 
 using namespace std;
 template <class T> 
@@ -205,4 +206,31 @@ inline int random_give_priority_to_primeros(int a, int b)
 }
 
 vector<string> openFile(const string& filename);
+
+template<class Predicate>
+vector<string> openFile(const string& filename, Predicate pred)
+{
+	vector<string> toreturn;
+	string line;
+    std::ifstream myfile(filename);
+
+    if(!myfile) //Always test the file open.
+    {
+        cout<<"Could not open file " << filename << endl;
+		throw "File not found";
+    }
+    
+    clock_t start = clock();
+	
+    while (std::getline(myfile, line))
+    {
+		if (pred(line))
+			toreturn.push_back(line);
+    }
+    
+    clock_t read = clock();
+// 	cout << "Time to read file: " << diffclock(read,start) << endl;
+	return toreturn;
+}
+
 vector<string> readfromstdin();

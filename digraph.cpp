@@ -85,7 +85,7 @@ void DiGraph::process()
 {
 	if (!m_processed)
 	{
-// 		cout << "Processing graph..." << endl;
+		cout << "Processing graph..." << endl;
 		Chronometer C;
 		find_weakly_connected_components();
 		cout << "weak coloring = " << m_weak_coloring << endl;
@@ -105,56 +105,56 @@ void DiGraph::process()
 	}
 }
 
-Path DiGraph::dfs_search(double mnswi) const
+Path DiGraph::forward_backward_dfs(node_t node, double mnswi)
 {
-	Chronometer C;
-    Path A = dfs_search_path_forward(m_basic_topological_ordering[0],mnswi);
+	Path FP = dfs_search_path_forward(node,mnswi);
 	
-	// We now have to decide whether or not to perform other searches.
-	// This should be based both on the time I was given and the number of vertices of the graph.
-	// More time means more likely I'll do searches. More vertices should make it LESS likely that I'll do more searches.
+	Path BP = FP;
 	
-	double score = 100*mnswi/log(2.0+num_vertices()) - C.Reset();
+	int numremoves  = std::min(20,int(BP.size()/2)-1);
+	for (int i = 0; i < numremoves; ++i) BP.pop_front();
 	
-// 	cout << "score = " << score << endl;
+	dfs_search_path_reverse(BP,mnswi);
+    if (BP.value() > FP.value())
+        FP = BP;
+    
+    return FP;
+}
+
+Path DiGraph::dfs_search(double mnswi, int numrestarts) const
+{
+	Path Best;
 	
-	node_t i = 1;
-    while (i < num_vertices() && score > 1.0)
+	if (numrestarts > num_vertices())
+		numrestarts = num_vertices();
+	
+    for (int i = 0; i < numrestarts; ++i)
     {
-		cout << "Doing it with score = " << score << endl;
-        Path P = dfs_search_path_forward(m_basic_topological_ordering[i],mnswi);
-        if (P.value() > A.value())
-            A = P;
-        ++i;
-        score -= C.Reset();
+		node_t node = m_basic_topological_ordering[i/2];
+		if (i%2 == 1)
+			node = rand()%num_vertices();
+		
+        Path P = dfs_search_path_forward(node,mnswi);
+        if (P.value() > Best.value())
+            Best = std::move(P);
     }
     
-    // This should be done regardless of whether or not I did other searches.
-    Path P = A;
-    for (int i = 0; i < 20; ++i) A.pop_front();
-	dfs_search_path_reverse(A,mnswi/3.0);
-    if (P.value() > A.value())
-        A = P;
-    
-    return A;
+    return Best;
 }
 
 
-Path DiGraph::FindLongestSimplePath(double numseconds)
+Path DiGraph::FindLongestSimplePath(double numseconds, double numsecondsDFSnoimprovement, int numrestarts)
 {
     Chronometer C;
 	process();
-    
-	
-	double dfstime = 0.008 + numseconds/20.0; 
-	
-	Path best = dfs_search(dfstime);
-	
+	cout << "Doing DFS search..." << endl;
+	Path best = dfs_search(numsecondsDFSnoimprovement,numrestarts);
 	double timeleft = numseconds-C.Peek();
 	
-	cout << "Done DFS search! Value = " << best.value()/2 << endl;
+	cout << "Done DFS search! Value = " << best.value() << endl;
 	cout << "Time taken for dfs: " << C.Peek() << endl;
 	
+	cout << "Doing PTO improving search for " << timeleft << "s" << endl;
 	pto_search(best,timeleft);
 	
 	return best;
@@ -165,74 +165,18 @@ void DiGraph::pto_search(Path& A, double maxnumseconds) const
 	Chronometer C;
 	
     PseudoTopoOrder PTO = get_random_pseudotopological_order();
-	cout << "Before applying A, PTO.Value() = " << PTO.Value()/2 << endl;
+// 	cout << "Before applying A, PTO.Value() = " << PTO.Value() << endl;
 	
 	PTO.apply(A);
 	
-	cout << "After applying A, PTO.Value() = " << PTO.Value()/2 << endl;
+// 	cout << "After applying A, PTO.Value() = " << PTO.Value() << endl;
 
-// 	cout << "*****************After second DFS, I have " << timeleft << "s of time left" << endl;
+	PTO.open_edges_until_no_more_improvement_found(maxnumseconds);
 	
-	PTO.open_edges_until_no_more_improvement_found(min(maxnumseconds,5.0));
+	cout << "After opening edges, PTO.Value() = " << PTO.Value() << endl;
 	
-// 	cout << "After opening edges, PTO.Value() = " << PTO.Value() << endl;
-	
-    if (A.value() < PTO.Value())
-        A = PTO.get_path();
-	
-	Path WA = A;
-	while (C.Peek() < maxnumseconds)
-	{
-		int numtopop = rand()%8+8;
-		for (int i = 0; i < numtopop; ++i)
-		{
-			WA.pop_back();
-			WA.pop_front();
-		}
-		PTO.randomize();
-		PTO.apply(WA);
-		PTO.open_edges_until_no_more_improvement_found(min(maxnumseconds-C.Peek(),1.5));
-		if (PTO.Value() > A.value())
-		{
-// 			cout << "holy shit, I advanced here to " << PTO.Value() << endl;
-			A = PTO.get_path();
-		}
-		WA = A;
-	}
+    A = PTO.get_path();
 }
-
-// Path DiGraph::FindLongestSimplePathPureDFS(double numseconds)
-// {
-// 	process();
-// 	
-// 	Path best(this,0);
-// 	
-// 	Chronometer C;
-// 	
-// 	double dfstime = numseconds/2.05 - 0.1;
-// 	
-// 	Path A = dfs_search_path_forward(m_basic_topological_ordering[0],dfstime);
-// // 	cout << "Done forward search! Value = " << A.Value() << endl;
-// 	
-// 	double timeleft = numseconds-C.Peek();
-// // 	cout << "After the first DFS, I have " << timeleft << "s of time left" << endl;
-// 	
-// 	if (timeleft > dfstime)
-// 	{
-// 		for (int i = 0; i < max(min(12,int(timeleft*20)),1); ++i) A.pop_front();
-// 		
-// // 		cout << "Starting backward search" << endl;
-// 		dfs_search_path_reverse(A,dfstime);
-// 	}
-// 	
-// 	if (A.Value() > best.Value())
-// 		best = A;
-// 	
-// 	timeleft = numseconds-C.Peek();
-// // 	cout << "After opening edges, I have " << timeleft << "s of time left" << endl;
-// 	
-// 	return best;
-// }
 
 size_t DiGraph::num_edges() const
 {
@@ -350,7 +294,7 @@ void DiGraph::dfs_search_path_forward(Path& P, double maxnumseconds) const
 			P = Q;
 			C.Reset();
 // 			cout << "(" << C.Peek() << ", " << P.value() << ")," << endl;
-			cout << P.value()/2 << endl;
+// 			cout << P.value()/2 << endl;
 		}
 	}
 }
@@ -373,7 +317,7 @@ void DiGraph::dfs_search_path_reverse(Path& P, double maxnumseconds) const
 			P = Q;
 			C.Reset();
 // 			cout << "(" << ChronometerPeek() << ", " << P.Value() << ")," << endl;
-			cout << P.value()/2 << endl;
+// 			cout << P.value()/2 << endl;
 		}
 	}
 }
@@ -410,32 +354,28 @@ void DiGraph::heuristic_processing()
 	m_basic_topological_ordering = range<node_t>(m_n);
 	sort (m_basic_topological_ordering.begin(), m_basic_topological_ordering.end(), [this](node_t a, node_t b) -> bool
 	{
-		if (rank_out(a) > rank_out(b))
-			return true;
+		//First, order by rank
 		if (rank_out(a) < rank_out(b))
 			return false;
-		
-// 		if (m_heuristic_out[a] == 0 && m_heuristic_out[b] == 0)
-// 		{
-// 			return m_vertex_values[a] > m_vertex_values[b];
-// 		}
-		
-		if (m_heuristic_out[a] == 0)
-			return false;
-		if (m_heuristic_out[b] == 0)
+		if (rank_out(a) > rank_out(b))
 			return true;
 		
-// 		if (ingraph[a].size() == 1 && ingraph[b].size() == 1)
-// 			return heuristic_out[a] < heuristic_out[b];
-		
-		if (m_ingraph[a].size() == 1 )
-			return true;
-		if (m_ingraph[b].size() == 1)
+		//If someone doesn't have out-neighbours, they should go last
+		if (outdegree(a) == 0)
 			return false;
+		if (outdegree(b) == 0)
+			return true;
 		
+		//The ones who have NO OTHER entry points should go first
+		if (indegree(b) == 1)
+			return false;
+		if (indegree(a) == 1 )
+			return true;
+		
+		//If all else fails, sort by heuristic
 		return m_heuristic_out[a] < m_heuristic_out[b];
 	});
-// 	random_shuffle(basic_topological_ordering.begin(), basic_topological_ordering.end());
+	
 	m_basic_topological_ordering_inverse.resize(m_n);
 	for (node_t i = 0; i < m_n; ++i)
 	{
@@ -445,32 +385,25 @@ void DiGraph::heuristic_processing()
 	m_basic_topological_ordering_in = range<node_t>(m_n);
 	sort (m_basic_topological_ordering_in.begin(), m_basic_topological_ordering_in.end(), [this](node_t a, node_t b) -> bool
 	{
-		if (rank_in(a) < rank_in(b))
-			return true;
 		if (rank_in(a) > rank_in(b))
 			return false;
-		
-// 		if (m_heuristic_in[a] == 0 && m_heuristic_in[b] == 0)
-// 		{
-// 			return vertex_values[a] > vertex_values[b];
-// 		}
-		
-		if (m_heuristic_in[a] == 0)
-			return false;
-		if (m_heuristic_in[b] == 0)
+		if (rank_in(a) < rank_in(b))
 			return true;
 		
-// 		if (ingraph[a].size() == 1 && ingraph[b].size() == 1)
-// 			return heuristic_out[a] < heuristic_out[b];
 		
-		if (m_outgraph[a].size() == 1 )
-			return true;
-		if (m_outgraph[b].size() == 1)
+		if (indegree(a) == 0)
 			return false;
+		if (indegree(b) == 0)
+			return true;
 		
+		if (outdegree(b) == 1)
+			return false;
+		if (outdegree(a) == 1 )
+			return true;
+
 		return m_heuristic_in[a] < m_heuristic_in[b];
 	});
-// 	random_shuffle(basic_topological_ordering.begin(), basic_topological_ordering.end());
+
 	m_basic_topological_ordering_inverse_in.resize(m_n);
 	for (node_t i = 0; i < m_n; ++i)
 	{
@@ -480,8 +413,6 @@ void DiGraph::heuristic_processing()
 	
 	for (size_t i = 0; i < m_n; ++i)
 	{
-// 		random_shuffle(outgraph[i].begin(), outgraph[i].end());
-// 		random_shuffle(ingraph[i].begin(), ingraph[i].end());
 		sort(m_outgraph[i].begin(), m_outgraph[i].end(), [this] (node_t a, node_t b) -> bool
 		{
 			return ex_compare(a,b);
@@ -828,14 +759,15 @@ std::ostream& operator<<(std::ostream& os, const ParamType& a)
 
 std::ostream& operator<<(std::ostream& os, const DiGraph& M)
 {
-    cout << "Digraph on " << M.num_vertices() << " vertices: " << M.get_vertex_names() << endl;
+    os << "Digraph on " << M.num_vertices() << " vertices: " << M.get_vertex_names();
     for (int i = 0; i < M.num_vertices(); ++i)
     {
         string name = M.get_vertex_name(i);
         for (auto v : M.outneighbors(i))
         {
+			os << endl;
             string vname = M.get_vertex_name(v);
-            os << name << u8" ⟼ " << vname << " with weight " << double(v.Weight()) << endl;
+            os << name << u8" ⟼ " << vname << " with weight " << double(v.Weight());
         }
     }
     return os;

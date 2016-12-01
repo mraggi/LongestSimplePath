@@ -42,6 +42,8 @@ public:
 	node_t get_size() const { return m_n; }
 	node_t num_vertices() const { return m_n; }
 	size_t num_edges() const;
+	size_t outdegree(node_t node) const { return m_outgraph[node].size(); }
+	size_t indegree(node_t node) const { return m_ingraph[node].size(); }
     
     const string& get_vertex_name(node_t i) const { return m_node_names[i]; }
     node_t get_vertex_index(const string& name) const 
@@ -81,12 +83,13 @@ public:
 	Path dfs_search_path_forward(node_t start, double maxnumseconds) const;
 	Path dfs_search_path_reverse(node_t start, double maxnumseconds) const;
 
-	Path dfs_search(double maxnumsecondswithoutimprovement) const;
+	Path dfs_search(double maxnumsecondswithoutimprovement, int numrestarts) const;
     void pto_search(Path& A, double maxnumseconds) const;
     
 	PseudoTopoOrder get_random_pseudotopological_order() const;
 	//Paths
-	Path FindLongestSimplePath(double numseconds);
+	Path FindLongestSimplePath(double numseconds, double numsecondsnoimprovementDFS = 0.05, int numrestarts = 3);
+	
 	Path FindLongestSimplePathPureDFS(double numseconds);
 	
 	bool TopologicalLessThan(node_t a, node_t b) const { return m_basic_topological_ordering_inverse[a] < m_basic_topological_ordering_inverse[b]; }
@@ -122,6 +125,8 @@ protected:
 	vector<vector<NeighborNode>> m_ingraph;
 
 private:
+	Path forward_backward_dfs(node_t node, double mnswi);
+
 	bool m_processed;
 	// Connected Components
 	vector<vector<node_t>> m_strongly_connected_components;
