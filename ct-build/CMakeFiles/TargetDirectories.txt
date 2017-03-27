@@ -1,3 +1,0 @@
-/home/mraggi/Dropbox/sources/Mathematics/LongestSimplePath/ct-build/CMakeFiles/rebuild_cache.dir
-/home/mraggi/Dropbox/sources/Mathematics/LongestSimplePath/ct-build/CMakeFiles/edit_cache.dir
-/home/mraggi/Dropbox/sources/Mathematics/LongestSimplePath/ct-build/CMakeFiles/lsp.dir
