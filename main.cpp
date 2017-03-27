@@ -1,17 +1,16 @@
 #include "digraph.hpp"
+#include "digraph.hpp"
 #include "path.hpp"
-#include "moviegraph.hpp"
 #include "trainer.hpp"
 #include <cmath>
 
-using namespace std;
-
 int main() 
 {
-// 	srand(time(nullptr));
+	std::ios_base::sync_with_stdio(false);
+	srand(time(nullptr));
 // 	randomize();
 	TimeFromStart(); // in order to create the timer. Doesn't matter much.
-	
+	// To create a graph with names, just pass a vector<string> containing names to the constructor.
     DiGraph G({"A","B","C","D","E","F","G","H"});
     
     G.add_edge("A","B",7);
@@ -21,30 +20,26 @@ int main()
     G.add_edge("D","E",4);
     G.add_edge("B","F",3);
     G.add_edge("F","G",2);
+
+	std::cout << "Created graph!" << std::endl;
+    std::cout << G << std::endl;
+    Path PG = G.FindLongestSimplePath();
     
-    cout << G << endl;
-    Path PG = G.FindLongestSimplePath(0.5);
-    
-    cout << "The best path I found in half a second has value " << PG.value() << endl;
+    std::cout << "The best path I found for graph G with the default options has value " << PG.value() << std::endl;
 
     
-    int n = 1001;
+    int n = 2000;
     double p = log(double(n))/(1.0*n);
     
-    cout << "Creating graph..." << flush;
+    std::cout << "\n\nCreating Erdos Renyi graph..." << std::flush;
     // Erdos Renyi digraph with n vertices, where each edge has a probability of p of appearing.
     DiGraph D = DiGraph::CreateRandomDiGraph(n,p);
-    cout << " done!" << endl;
+    std::cout << " done!" << "\nSearching Path..." << std::endl;
     
-    cout << "Processing graph...";
-    D.process();
-    cout << " done!" << endl;
     
-    cout << "Searching path...";    
-    Path P = D.FindLongestSimplePath(1.0,0.05,4);
-    cout << " done!" << endl;
+    Path P = D.FindLongestSimplePath();
     
-    cout << "The best path I found has value " << P.value() << endl;
+    std::cout << "The best path I found for graph D has value " << P.value() << '\n';
 	
     return 0;
 }

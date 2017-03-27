@@ -8,13 +8,12 @@
 #include <ctime>
 #include <random>
 #include <fstream>
+#include <cassert>
 
-using namespace std;
 template <class T> 
-T max(const vector<T>& v)
+T max(const std::vector<T>& v)
 {
-	if (v.size() == 0)
-		cout << "SHIT!" << endl;
+	assert (v.size() != 0);
 	T m = v[0];
 	size_t sz = v.size();
 	for (size_t i = 0; i < sz; ++i)
@@ -34,7 +33,7 @@ template <class T> std::vector<T> range (T n)
 }
 
 template <class T> 
-	std::ostream& operator<<(std::ostream& os, const vector<T>& rhs)
+	std::ostream& operator<<(std::ostream& os, const std::vector<T>& rhs)
 	{
 		os << "[ ";
 		for (const auto& x : rhs)
@@ -50,7 +49,7 @@ class SquareSparseMatrix
 public:
     SquareSparseMatrix(int i) : n(i)
 	{ 
-		m_data = vector<vector<T>>(n,vector<T>(n,0));
+		m_data = std::vector<std::vector<T>>(n,std::vector<T>(n,0));
 	}
     
 //     inline int size() const { return n; }
@@ -80,8 +79,8 @@ public:
 //     }
 
 private:
-//     vector<vector<T>> m_data;
-	vector<vector<T>> m_data;
+//     std::vector<std::vector<T>> m_data;
+	std::vector<std::vector<T>> m_data;
     int n;
 };
 
@@ -94,7 +93,7 @@ std::ostream& operator<<(std::ostream& os, const SquareSparseMatrix<T>& M)
 		{
 			os << M(x,y) << " ";
 		}
-		os << endl;
+		os << std::endl;
 	}
 	return os;
 }*/
@@ -205,22 +204,22 @@ inline int random_give_priority_to_primeros(int a, int b)
 	return toreturn;
 }
 
-vector<string> openFile(const string& filename);
+std::vector<std::string> openFile(const std::string& filename);
 
 template<class Predicate>
-vector<string> openFile(const string& filename, Predicate pred)
+std::vector<std::string> openFile(const std::string& filename, Predicate pred)
 {
-	vector<string> toreturn;
-	string line;
+	std::vector<std::string> toreturn;
+	std::string line;
     std::ifstream myfile(filename);
 
     if(!myfile) //Always test the file open.
     {
-        cout<<"Could not open file " << filename << endl;
+        std::cout<<"Could not open file " << filename << std::endl;
 		throw "File not found";
     }
     
-    clock_t start = clock();
+//     clock_t start = clock();
 	
     while (std::getline(myfile, line))
     {
@@ -228,9 +227,9 @@ vector<string> openFile(const string& filename, Predicate pred)
 			toreturn.push_back(line);
     }
     
-    clock_t read = clock();
-// 	cout << "Time to read file: " << diffclock(read,start) << endl;
+//     clock_t read = clock();
+// 	std::cout << "Time to read file: " << diffclock(read,start) << std::endl;
 	return toreturn;
 }
 
-vector<string> readfromstdin();
+std::vector<std::string> readfromstdin();

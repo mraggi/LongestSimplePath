@@ -1,39 +1,39 @@
 #include "helpers.hpp"
 #include <fstream>
 
-vector<string> openFile(const string& filename)
+std::vector<std::string> openFile(const std::string& filename)
 {
-	vector<string> toreturn;
-	string line;
+	std::vector<std::string> toreturn;
+	std::string line;
     std::ifstream myfile(filename);
 
     if(!myfile) //Always test the file open.
     {
-        cout<<"Could not open file " << filename << endl;
+        std::cout<<"Could not open file " << filename << std::endl;
 		throw "File not found";
     }
     
-    clock_t start = clock();
+//     clock_t start = clock();  
 	
     while (std::getline(myfile, line))
     {
         toreturn.push_back(line);
     }
     
-    clock_t read = clock();
-// 	cout << "Time to read file: " << diffclock(read,start) << endl;
+//     clock_t read = clock();
+// 	std::cout << "Time to read file: " << diffclock(read,start) << std::endl;
 	return toreturn;
 }
 
-vector<string> readfromstdin()
+std::vector<std::string> readfromstdin()
 {
-	clock_t start = clock();
-	string bla = "";
-	vector<string> toreturn;
+// 	clock_t start = clock();
+	std::string bla;
+	std::vector<std::string> toreturn;
 //  	toreturn.reserve(10000);
-	while (cin)
+	while (std::cin)
 	{
-		getline(cin,bla);
+		getline(std::cin,bla);
 		toreturn.push_back(bla);
 	}
 	return toreturn;

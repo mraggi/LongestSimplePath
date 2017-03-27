@@ -4,8 +4,6 @@
 #include "trainer.hpp"
 #include <cmath>
 
-using namespace std;
-
 int main() 
 {
 	srand(time(nullptr));

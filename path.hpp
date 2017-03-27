@@ -1,20 +1,15 @@
 #pragma once
-#include "digraph.hpp"
 #include <deque>
-
-#pragma once
-
 #include <iostream>
 #include <vector>
-#include <array>
 #include <array>
 #include <string>
 #include <queue>
 #include <algorithm>
 #include <cassert>
-using namespace std;
 
-using node_t = long;
+using node_t = int;
+
 const node_t INVALID_NODE = -1;
 
 using weight_t = long;
@@ -56,8 +51,8 @@ public:
     }
     
     
-    const deque<NeighborNode>& get_path() const { return m_path; }
-    inline operator const deque<NeighborNode>&() const { return m_path; }
+    const std::deque<NeighborNode>& get_path() const { return m_path; }
+    inline operator const std::deque<NeighborNode>&() const { return m_path; }
 //     inline operator vector<NeighborNode>&()  { return m_path; }
     long value() const { return m_value; }
     long cost() const { return m_value; }
@@ -152,7 +147,7 @@ public:
     }
     
     template <class Compare>
-    NeighborNode first_not_explored_binary(const vector<NeighborNode>& Nodes, node_t start, Compare comp) const
+    NeighborNode first_not_explored_binary(const std::vector<NeighborNode>& Nodes, node_t start, Compare comp) const
     {
         auto it = std::upper_bound(Nodes.begin(), Nodes.end(), start, comp);
     // 	++it;
@@ -163,12 +158,12 @@ public:
         return *it;
     }
     
-    NeighborNode first_not_explored_binary(const vector<NeighborNode>& Nodes, node_t start) const
+    NeighborNode first_not_explored_binary(const std::vector<NeighborNode>& Nodes, node_t start) const
     {
         return first_not_explored_binary(Nodes,start,std::less<node_t>());
     }
     
-    NeighborNode first_not_explored(const vector<NeighborNode>& Nodes, node_t start) const
+    NeighborNode first_not_explored(const std::vector<NeighborNode>& Nodes, node_t start) const
     {
         bool seenstart = false;
         for (auto x : Nodes)
@@ -185,7 +180,7 @@ public:
         return NeighborNode(INVALID_NODE,0);
     }
     
-    NeighborNode first_not_explored(const vector<NeighborNode>& Nodes) const
+    NeighborNode first_not_explored(const std::vector<NeighborNode>& Nodes) const
     {
         for (auto x : Nodes)
         {
@@ -207,9 +202,9 @@ public:
     
     
 private:
-    deque<NeighborNode> m_path;
-    vector<char> m_explored;
-//     vector<bool> m_explored;
+    std::deque<NeighborNode> m_path;
+    std::vector<char> m_explored;
+//     std::vector<bool> m_explored;
     long m_value;
 public:
     const decltype(m_path)& data() const { return m_path; }
@@ -254,8 +249,8 @@ public:
 		m_explored[node] = 1;
 	}
 	
-	Path(const DiGraph*const parent, const deque<node_t>& path);
-	Path(const DiGraph*const parent, const deque<node_t>& path, sumweight_t value);
+	Path(const DiGraph*const parent, const std::deque<node_t>& path);
+	Path(const DiGraph*const parent, const std::deque<node_t>& path, sumweight_t value);
 	
     const DiGraph* const get_digraph() const { return m_parent; }
     
@@ -275,7 +270,7 @@ public:
 	void ExpandGreedyBack();
 	void ExpandGreedyFront();
 	
-	node_t FirstNotExplored(const vector<node_t>& Nodes) const
+	node_t FirstNotExplored(const std::vector<node_t>& Nodes) const
 	{
 		for (auto x : Nodes)
 		{
@@ -287,9 +282,9 @@ public:
 	
 	bool SanityCheck() const;
 	
-	node_t FirstNotExplored(const vector< node_t >& Nodes, node_t start) const;
-	int FirstNotExploredEX(const vector< node_t >& Nodes, node_t start) const;
-	int FirstNotExploredIN(const vector< node_t >& Nodes, node_t start) const;
+	node_t FirstNotExplored(const std::vector< node_t >& Nodes, node_t start) const;
+	int FirstNotExploredEX(const std::vector< node_t >& Nodes, node_t start) const;
+	int FirstNotExploredIN(const std::vector< node_t >& Nodes, node_t start) const;
 // 	int LengthOfFirstRunNI(const Path& P) const;
 	
 	// destroys path
@@ -297,15 +292,15 @@ public:
 	
 	bool operator==(const Path& P) const;
 	bool operator!=(const Path& P) const;
-	const deque<node_t>& get_path() const { return m_path; }
+	const std::deque<node_t>& get_path() const { return m_path; }
 	bool IsNodeInPath(node_t node) const { return m_explored[node]; }
-    void transform_nodes(const vector< node_t >& m_removalfunctioninverse);
+    void transform_nodes(const std::vector< node_t >& m_removalfunctioninverse);
 	
 private:
 	const DiGraph* m_parent;
     sumweight_t m_totalvalue;
-	deque<node_t> m_path;
-	vector<char> m_explored;
+	std::deque<node_t> m_path;
+	std::vector<char> m_explored;
 };*/
 
 // std::ostream& operator<<(std::ostream& os, const Path& P);

@@ -1,0 +1,1 @@
+/usr/bin/clang++    -std=c++14 -O3 -DNDEBUG   CMakeFiles/lsp.dir/main.cpp.o CMakeFiles/lsp.dir/digraph.cpp.o CMakeFiles/lsp.dir/pseudotopoorder.cpp.o CMakeFiles/lsp.dir/helpers.cpp.o  -o lsp -rdynamic 

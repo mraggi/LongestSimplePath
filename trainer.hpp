@@ -14,9 +14,9 @@ struct Individual
 class Trainer
 {
 public:
-    Trainer(const vector<DiGraph*> training_set) : m_training_set(training_set) {}
-    ParamType Train(int numgenerations, vector<Individual> population = vector<Individual>());
-    vector<DiGraph*> m_training_set;
+    Trainer(const std::vector<DiGraph*> training_set) : m_training_set(training_set) {}
+    ParamType Train(int numgenerations, std::vector<Individual> population = std::vector<Individual>());
+    std::vector<DiGraph*> m_training_set;
 	
 	Individual createIndividual(const ParamType& a) const;
 	Individual createRandomIndividual() const;
