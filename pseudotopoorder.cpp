@@ -336,7 +336,7 @@ void PseudoTopoOrder::FillPath()
 
 	m_path.clear();
 	FillDP();
-	auto m = Value();
+// 	auto m = Value();
 	weight_t currweight = 0;
 	int a = best_index;
 	path_filled = true;
@@ -360,7 +360,7 @@ void PseudoTopoOrder::FillPath()
 			if (dynamic_programming[b] == dynamic_programming[a] - v.Weight())
 			{
 				a = b;
-				m = dynamic_programming[b];
+// 				m = dynamic_programming[b];
 				currweight = v.Weight();
 				found = true;
 				break;

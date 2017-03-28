@@ -14,7 +14,7 @@ bool operator<=(const Individual& A, const Individual& B)
 
 
 
-ParamType Trainer::Train(int numgenerations, vector<Individual> population)
+param_t Trainer::Train(int numgenerations, vector<Individual> population)
 {
 	population.emplace_back(createIndividual({1,4,16,64,1,4,16,64}));
 	population.emplace_back(createIndividual({-43,31,11,58,-4,23,43,45}));
@@ -77,7 +77,7 @@ ParamType Trainer::Train(int numgenerations, vector<Individual> population)
 	return population[0].A;
 }
 
-Individual Trainer::createIndividual(const ParamType& a) const
+Individual Trainer::createIndividual(const param_t& a) const
 {
 	double average = 0;
 	for (auto p : m_training_set)
@@ -95,12 +95,12 @@ Individual Trainer::createRandomIndividual() const
 {
 	double maxval = 100.0;
 	double minval = -20.0;
-	ParamType a;
+	param_t a;
 	for (int i = 0; i < 8; ++i) a[i] = random_real(minval,maxval);
 	return createIndividual(a);
 }
 
-void perturb(ParamType& params, double perturbation)
+void perturb(param_t& params, double perturbation)
 {
 	for (size_t i = 0; i < 8; ++i)
 	{

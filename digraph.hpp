@@ -20,8 +20,7 @@ struct SccInfo
 };
 class PseudoTopoOrder;
 
-using ParamType = std::array<double, 8>;
-
+using param_t = std::array<double, 8>;
 
 class DiGraph
 {
@@ -53,7 +52,7 @@ public:
 	}
 	const std::vector<std::string>& get_vertex_names() const { return m_node_names; }
 
-	void set_parameters(const ParamType& new_params)
+	void set_parameters(const param_t& new_params)
 	{
 		m_params = new_params;
 		heuristic_processing();
@@ -85,7 +84,7 @@ public:
 	Path dfs_forward_full() const;
 	Path dfs_backward_full() const;
 	
-	Path dfs_search() const;
+	Path dfs_search();
 	void pto_search(Path& A) const;
 
 	PseudoTopoOrder get_random_pseudotopological_order() const;
@@ -177,13 +176,13 @@ private:
 
 
 //     ParamType m_params {{-43,31,11,58,-4,23,43,45}};
-	ParamType m_params {{1, 4, 16, 64, 1, 4, 16, 64}};
+	param_t m_params {{1, 4, 16, 64, 1, 4, 16, 64}};
 
 	friend class PseudoTopoOrder;
 };
 
 std::ostream& operator<<(std::ostream& os, const DiGraph& M);
-std::ostream& operator<<(std::ostream& os, const ParamType& a);
+std::ostream& operator<<(std::ostream& os, const param_t& a);
 
 
 

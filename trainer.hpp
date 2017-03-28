@@ -6,8 +6,8 @@ const double maxnumsecondsperthingy = 0.1;
 
 struct Individual
 {
-	Individual(const ParamType& a, double value) : A(a), x(value) {}
-	ParamType A;
+	Individual(const param_t& a, double value) : A(a), x(value) {}
+	param_t A;
 	double x;
 };
 
@@ -15,11 +15,11 @@ class Trainer
 {
 public:
     Trainer(const std::vector<DiGraph*> training_set) : m_training_set(training_set) {}
-    ParamType Train(int numgenerations, std::vector<Individual> population = std::vector<Individual>());
+    param_t Train(int numgenerations, std::vector<Individual> population = std::vector<Individual>());
     std::vector<DiGraph*> m_training_set;
 	
-	Individual createIndividual(const ParamType& a) const;
+	Individual createIndividual(const param_t& a) const;
 	Individual createRandomIndividual() const;
 };
 
-void perturb(ParamType& params, double perturbation = 15.0);
+void perturb(param_t& params, double perturbation = 15.0);

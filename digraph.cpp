@@ -32,6 +32,7 @@ DiGraph::DiGraph(node_t numNodes) :
 		m_node_names[i] = std::to_string(i);
 		m_namemap[std::to_string(i)] = i;
 	}
+	
 
 }
 
@@ -131,19 +132,17 @@ Path DiGraph::dfs_forward_full() const
 	Path Best;
 
 	//FORWARD SEARCH
-	
+
 	auto numrestarts = Options.dfs_forward_num_starting_nodes;
 	auto t = Options.dfs_time_woimprovement;
 
 	if (numrestarts > num_vertices())
-	{
 		numrestarts = num_vertices();
-	}
+
 
 	for (int i = 0; i < numrestarts; ++i)
 	{
 		node_t node = m_basic_topological_ordering[i / 2];
-
 		if ((i%2) == 1)
 		{
 			node = rand() % num_vertices();
@@ -181,13 +180,84 @@ Path DiGraph::dfs_forward_full() const
 	return Best;
 }
 
-Path DiGraph::dfs_search() const
+Path DiGraph::dfs_backward_full() const
+{
+	Path Best;
+
+	//FORWARD SEARCH
+	
+	auto numrestarts = Options.dfs_backward_num_starting_nodes;
+	auto t = Options.dfs_time_woimprovement;
+
+	if (numrestarts > num_vertices())
+		numrestarts = num_vertices(); //really no point in starting from more than the number of vertices.
+	
+	for (int i = 0; i < numrestarts; ++i)
+	{
+		node_t node = m_basic_topological_ordering_in[i/2];
+		if ((i%2) == 1)
+		{
+			node = rand() % num_vertices();
+		}
+
+		Path P = dfs_search_path_backward(node, t);
+
+		if (P.value() > Best.value())
+		{
+			Best = std::move(P);
+		}
+	}
+
+	int num_deletions = Options.dfs_how_many_to_erase_from_opposite_side;
+	auto P = Best;
+	int Psize = static_cast<int>(P.size());
+
+	if (num_deletions > Psize/2)
+	{
+		num_deletions = Psize/2;
+	}
+
+	for (int i = 0; i < num_deletions; ++i)
+	{
+		P.pop_back();
+	}
+
+	dfs_search_path_forward(P, t);
+
+	if (P.value() > Best.value())
+		Best = std::move(P);
+	
+	return Best;
+}
+
+/////////////////
+/// These are just some parameters I found useful. Probably best to do something smarter. 
+/// Check trainer.cpp (hpp) to see a way to find these parameters using genetic algorithms.
+////////////
+param_t GetParams(int i)
+{
+	if (i == 0)
+		return {{1,4,16,64,1,4,16,64}};
+	if (i == 1)
+		return {{-43,31,11,58,-4,23,43,45}};
+	param_t X;
+	for (auto& x : X)
+		x = rand()%100-10;
+	return X;
+}
+
+Path DiGraph::dfs_search()
 {
 	Path Best;
 	
 	for (int i = 0; i < Options.dfs_num_parameter_restarts; ++i)
 	{
+		set_parameters(GetParams(i));
 		auto ForwardPath = dfs_forward_full();
+		
+		if (ForwardPath.value() > Best.value())
+			Best = std::move(ForwardPath);
+		
 		auto BackwardPath = dfs_backward_full();
 		if (BackwardPath.value() > Best.value())
 			Best = std::move(BackwardPath);
@@ -198,16 +268,16 @@ Path DiGraph::dfs_search() const
 
 Path DiGraph::FindLongestSimplePath()
 {
-// 	Chronometer C;
+	Chronometer C;
 	process();
 
-// 	std::cout << "Doing DFS search..." << std::endl;
+	std::cout << "Doing DFS search..." << std::endl;
 	Path best = dfs_search();
 
-// 	std::cout << "Done DFS search! Value = " << best.value() << std::endl;
-// 	std::cout << "Time taken for dfs: " << C.Peek() << std::endl;
+	std::cout << "Done DFS search! Value = " << best.value() << std::endl;
+	std::cout << "Time taken for dfs: " << C.Peek() << std::endl;
 
-// 	std::cout << "Doing PTO improving search..." << std::endl;
+	std::cout << "Doing PTO improving search..." << std::endl;
 	pto_search(best);
 
 	return best;
@@ -906,26 +976,16 @@ DiGraph DiGraph::CreateRandomWeightedDiGraph(int n, double p, weight_t minweight
 	return D;
 }
 
-std::ostream& operator<<(std::ostream& os, const ParamType& a)
+std::ostream& operator<<(std::ostream& os, const param_t& a)
 {
-	os << std::endl << "\tex: ";
-
-	for (int i = 0; i < 4; ++i)
+	int i = 0;
+	for (auto x : a)
 	{
-		os << a[i] << " ";
-
+		os << x << ' ';
+		if (i == 4)
+			os << '|';
+		++i;
 	}
-
-	os << std::endl;
-
-	os << "\tin: ";
-
-	for (int i = 4; i < 8; ++i)
-	{
-		os << a[i] << " ";
-	}
-
-	os << std::endl;
 	return os;
 }
 
