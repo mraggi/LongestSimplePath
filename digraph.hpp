@@ -43,6 +43,8 @@ public:
 	size_t outdegree(node_t node) const { return m_outgraph[node].size(); }
 	size_t indegree(node_t node) const { return m_ingraph[node].size(); }
 
+	bool are_neighbors(node_t a, node_t b) const;
+	
 	const std::string& get_vertex_name(node_t i) const { return m_node_names[i]; }
 	node_t get_vertex_index(const std::string& name) const
 	{
@@ -52,6 +54,8 @@ public:
 	}
 	const std::vector<std::string>& get_vertex_names() const { return m_node_names; }
 
+	bool check_path(const Path& P) const;
+	
 	void set_parameters(const param_t& new_params)
 	{
 		m_params = new_params;
@@ -94,17 +98,17 @@ public:
 	{
 		// DFS part
 		int dfs_num_parameter_restarts{3};
-		double dfs_time_woimprovement{0.1};
-		int dfs_forward_num_starting_nodes{2};
+		double dfs_time_woimprovement{0.05};
+		int dfs_forward_num_starting_nodes{3};
 		int dfs_backward_num_starting_nodes{1};
 		
-		int dfs_how_many_to_erase_from_opposite_side{10};
+		int dfs_how_many_to_erase_from_opposite_side{20};
 // 		int num_saved_for_pto {1};
 
 		// PSO part
-		double pto_time_without_improvement{1.0};
+		double pto_time_without_improvement{2.0};
 		int pto_num_times_restart {1};
-		int pto_num_heuristic_sort{15000};
+		int pto_num_heuristic_sort{10000};
 		int pto_scc_size_max_pointless {4};
 	};
 	
@@ -120,6 +124,8 @@ public:
 	static DiGraph CreateRandomDiGraph(int n, double p);
 	static DiGraph CreateRandomWeightedDiGraph(int n, double p, weight_t minweight, weight_t maxweight);
 
+	std::vector<DiGraph> StronglyConnectedInducedGraphs();
+	
 private:
 	// Utils for creating the graph
 	void remove_bad_nodes();
@@ -179,6 +185,9 @@ private:
 	param_t m_params {{1, 4, 16, 64, 1, 4, 16, 64}};
 
 	friend class PseudoTopoOrder;
+	
+	mutable sumweight_t global_best {-1};
+	mutable Chronometer global_chrono {};
 };
 
 std::ostream& operator<<(std::ostream& os, const DiGraph& M);

@@ -10,6 +10,7 @@ public:
 		pto(ts),
 		pto_inverse(tsi),
 		dynamic_programming(ts.size(), 0),
+		best_parent(ts.size(),-1),
 		best_index(0),
 		first_unknown(0),
 		path_filled(false),
@@ -44,11 +45,13 @@ public:
 	Path get_path();
 
 	void shuffle(int  a, int b); // this assumes already a < b and they belong to the same component
+	
 	sumweight_t  Value()
 	{
 		FillDP();
 		return dynamic_programming[best_index];
 	}
+	
 	void apply(const Path& P);
 	void apply(const Path& P, int u, int v);
 // 	void random_apply(const Path& P);
@@ -93,9 +96,14 @@ private:
 	std::vector<node_t> pto;
 	std::vector<node_t> pto_inverse;
 	std::vector<sumweight_t> dynamic_programming;
+	std::vector<node_t> best_parent;
 	int best_index;
 	int first_unknown;
 	bool path_filled;
 	std::vector<NeighborNode> m_path; //Path is filled with indices in REVERSE ORDER
 	const DiGraph& m_parent;
+public:
+	bool is_path_in_order(const Path& P);
+	sumweight_t global_best{0};
+	Chronometer timer;
 };

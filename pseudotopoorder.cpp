@@ -25,6 +25,7 @@ void PseudoTopoOrder::RecalcTopoInverse()
 
 void PseudoTopoOrder::apply(const Path& P)
 {
+	global_best = P.value();
 	auto it = P.get_path().begin();
 	int fu = -1;
 	int n = pto.size();
@@ -45,8 +46,10 @@ void PseudoTopoOrder::apply(const Path& P)
 			++it;
 		}
 	}
-
 	AnnounceModification(fu);
+// 	FillDP();
+// 	FillPath();
+	
 }
 
 void PseudoTopoOrder::apply(const Path& P, int u, int v)
@@ -87,7 +90,7 @@ void PseudoTopoOrder::apply(const Path& P, int u, int v)
 Path PseudoTopoOrder::get_path()
 {
 	FillPath();
-// 	cout << "Filling path, with value: " << Value() << endl;
+// 	std::cout << "Filling path, with value: " << Value() << std::endl;
 	Path P(size());
 
 	for (auto i : m_path)
@@ -108,7 +111,8 @@ void PseudoTopoOrder::FillDP()
 		best_val = dynamic_programming[best_index];
 	}
 
-	for (; first_unknown < n; ++first_unknown)
+// 	std::cout << "\nAt the beginning of filldp, first unknown: " << first_unknown << "/" << n << " and value of bestindex = " << dynamic_programming[best_index] << std::endl;
+	for ( ; first_unknown < n; ++first_unknown)
 	{
 		int u = pto[first_unknown];
 		dynamic_programming[first_unknown] = 0;
@@ -119,7 +123,7 @@ void PseudoTopoOrder::FillDP()
 		{
 			auto j = pto_inverse[v];
 
-			if (first_unknown < j)   // should be ignored
+			if (first_unknown <= j)   // should be ignored
 			{
 				continue;
 			}
@@ -129,6 +133,7 @@ void PseudoTopoOrder::FillDP()
 			if (candidate > dynamic_programming[first_unknown])
 			{
 				dynamic_programming[first_unknown] = candidate;
+				best_parent[first_unknown] = j;
 
 				if (candidate > best_val)
 				{
@@ -139,8 +144,13 @@ void PseudoTopoOrder::FillDP()
 			}
 		}
 	}
+	if (best_val > global_best)
+	{
+		std::cout << "PTO improved path to " << best_val << " at " << TimeFromStart() << std::endl;
+		global_best = best_val;
+	}
 
-// 	cout << "returning value: " << best_val << " = " << dynamic_programming[best_index] << endl;
+// 	std::cout << "\nreturning value: " << best_val << " = " << dynamic_programming[best_index] << std::endl;
 }
 
 void PseudoTopoOrder::randomize()
@@ -246,6 +256,23 @@ int PseudoTopoOrder::get_outneighbor_in_range(int a, int b, node_t node)
 	return -1;
 }
 
+bool PseudoTopoOrder::is_path_in_order(const Path& P)
+{
+	auto it = P.get_path().begin();
+	auto it2 = it;
+	++it2;
+	while ( it2 != P.get_path().end())
+	{
+		if (pto_inverse[*it] >= pto_inverse[*it2])
+			return false;
+		++it;
+		++it2;
+		
+	}
+	return true;
+}
+
+
 bool PseudoTopoOrder::eXtreme_edge_opener()
 {
 	auto oldval = Value();
@@ -303,7 +330,7 @@ bool PseudoTopoOrder::eXtreme_edge_opener()
 
 			if (Value() > oldval)
 			{
-// 				cout << "(" << ChronometerPeek() << ", " << Value() << ")," << endl;
+				timer.Reset();
 				FillPath();
 				return true;
 			}
@@ -318,9 +345,8 @@ bool PseudoTopoOrder::eXtreme_edge_opener()
 void PseudoTopoOrder::open_edges_until_no_more_improvement_found()
 {
 	double maxnumseconds = m_parent.Options.pto_time_without_improvement;
-	Chronometer C;
 
-	while (C.Peek() < maxnumseconds*10)
+	while (timer.Peek() < maxnumseconds)
 	{
 		eXtreme_edge_opener();
 	}
@@ -337,27 +363,29 @@ void PseudoTopoOrder::FillPath()
 	m_path.clear();
 	FillDP();
 // 	auto m = Value();
+// 	std::cout << "\nAt beginning of fillpath, value: " << Value() << std::endl;
 	weight_t currweight = 0;
 	int a = best_index;
 	path_filled = true;
-
+	int numadded = 0;
 	while (true)
 	{
 		bool found = false;
 // 		cout << "toret = " << toReturn << endl;
 		node_t u = pto[a];
 		m_path.emplace_back(a, currweight);
-
+		++numadded;
+// 		std::cout << "Adding " << a << " to path" << std::endl;
 		for (auto v : m_parent.inneighbors(u))
 		{
 			node_t b = pto_inverse[v];
 
-			if (b > a)
-			{
-				continue;
-			}
+// 			if (b > a)
+// 			{
+// // 				continue;
+// 			}
 
-			if (dynamic_programming[b] == dynamic_programming[a] - v.Weight())
+			if (b < a && dynamic_programming[b] + v.Weight() == dynamic_programming[a])
 			{
 				a = b;
 // 				m = dynamic_programming[b];
@@ -369,6 +397,21 @@ void PseudoTopoOrder::FillPath()
 
 		if (!found)
 		{
+// 			std::cout << "\nAt end of fillpath, value: " << numadded << std::endl;
+			if (dynamic_programming[a] != 0)
+			{
+				std::cout << "\n\n\n AAAAAAAAAAAAAAAAAA: I still have " << dynamic_programming[a] << " to go at vertex at index " << a << " but I can't find where to go from here! I'm supposed to go to " << best_parent[a] << std::endl;
+				node_t u = pto[a];
+				for (auto v : m_parent.inneighbors(u))
+				{
+					auto b = pto_inverse[v];
+					if (b < a)
+					{
+						std::cout << "\t" << b << " with value " << dynamic_programming[b] << std::endl;
+					}
+				}
+				throw;
+			}
 			return;
 		}
 	}

@@ -57,7 +57,7 @@ DiGraph::DiGraph(const std::vector<std::string>& vertex_names)  :
 	m_node_names(vertex_names),
 	m_namemap()
 {
-	for (node_t i = 0; i < m_node_names.size(); ++i)
+	for (size_t i = 0; i < m_node_names.size(); ++i)
 	{
 		m_namemap[m_node_names[i]] = i;
 	}
@@ -80,6 +80,33 @@ void DiGraph::add_edge(const std::string& from, const std::string& to, weight_t 
 	assert(m_namemap.find(from) != m_namemap.end());
 	assert(m_namemap.find(to) != m_namemap.end());
 	add_edge(m_namemap[from], m_namemap[to], weight);
+}
+
+template <class Container, class T>
+bool is_in(const Container& C, T val)
+{
+	return std::find(C.begin(), C.end(), val) != C.end();
+}
+
+bool DiGraph::are_neighbors(node_t a, node_t b) const
+{
+	return is_in(outneighbors(a),b);
+}
+
+bool DiGraph::check_path(const Path& P) const
+{
+	auto it = P.get_path().begin();
+	auto it2 = it;
+	++it2;
+	while ( it2 != P.get_path().end())
+	{
+		if (!are_neighbors(*it,*it2))
+			return false;
+		++it;
+		++it2;
+		
+	}
+	return true;
 }
 
 
@@ -139,7 +166,7 @@ Path DiGraph::dfs_forward_full() const
 	if (numrestarts > num_vertices())
 		numrestarts = num_vertices();
 
-
+	using namespace std;
 	for (int i = 0; i < numrestarts; ++i)
 	{
 		node_t node = m_basic_topological_ordering[i / 2];
@@ -147,15 +174,18 @@ Path DiGraph::dfs_forward_full() const
 		{
 			node = rand() % num_vertices();
 		}
-
 		Path P = dfs_search_path_forward(node, t);
-
 		if (P.value() > Best.value())
 		{
 			Best = std::move(P);
+			if (Best.value() > global_best)
+			{
+				global_best = Best.value();
+				cout << "Found DFS improvement at " << global_chrono.Peek() << " to " << global_best << endl;
+			}
 		}
 	}
-
+// 	cout << "El mejor que encontré tiene tamaño " << Best.size() << endl;
 	int num_deletions = Options.dfs_how_many_to_erase_from_opposite_side;
 	auto P = Best;
 	int Psize = static_cast<int>(P.size());
@@ -175,6 +205,11 @@ Path DiGraph::dfs_forward_full() const
 	if (P.value() > Best.value())
 	{
 		Best = std::move(P);
+		if (Best.value() > global_best)
+		{
+			global_best = Best.value();
+			cout << "Found DFS improvement at " << global_chrono.Peek() << " to " << global_best << endl;
+		}
 	}
 	
 	return Best;
@@ -249,18 +284,22 @@ param_t GetParams(int i)
 Path DiGraph::dfs_search()
 {
 	Path Best;
-	
+	using namespace std;
 	for (int i = 0; i < Options.dfs_num_parameter_restarts; ++i)
 	{
 		set_parameters(GetParams(i));
+// 		cout << "Terminé de poner los parámetros" << endl;
 		auto ForwardPath = dfs_forward_full();
 		
 		if (ForwardPath.value() > Best.value())
 			Best = std::move(ForwardPath);
 		
+// 		cout << "terminé de hacer forward search" << endl;
+		
 		auto BackwardPath = dfs_backward_full();
 		if (BackwardPath.value() > Best.value())
 			Best = std::move(BackwardPath);
+// 		cout << "terminé de hacer backward search" << endl;
 	}
 	return Best;
 }
@@ -268,20 +307,25 @@ Path DiGraph::dfs_search()
 
 Path DiGraph::FindLongestSimplePath()
 {
-	Chronometer C;
+	
 	process();
 
+	std::cout << "Finished preprocessing in: " << global_chrono.Reset() << std::endl;
+	
 	std::cout << "Doing DFS search..." << std::endl;
 	Path best = dfs_search();
+	
 
-	std::cout << "Done DFS search! Value = " << best.value() << std::endl;
-	std::cout << "Time taken for dfs: " << C.Peek() << std::endl;
+	std::cout << "Done DFS search! Best Value = " << global_best << std::endl;
+	std::cout << "Time taken for dfs: " << global_chrono.Peek() << std::endl;
 
 	std::cout << "Doing PTO improving search..." << std::endl;
 	pto_search(best);
 
 	return best;
 }
+
+
 
 void DiGraph::pto_search(Path& A) const
 {
@@ -291,14 +335,40 @@ void DiGraph::pto_search(Path& A) const
 // 	std::cout << "Before applying A, PTO.Value() = " << PTO.Value() << std::endl;
 
 	PTO.apply(A);
-
-// 	std::cout << "After applying A, PTO.Value() = " << PTO.Value() << std::endl;
-
+	
+// 	if (!check_path(A))
+// 	{
+// 		std::cout << "SHIT! path is not correct!" << std::endl;
+// 		throw;
+// 	}
+// 	auto val = PTO.Value();
+// 	std::cout << "After applying A, PTO.Value() = " << val << std::endl;
+// 	A = PTO.get_path();
+// 	std::cout << "Uh, the path then should have the same value: " << A.value() << std::endl;
+// 	std::cout << "is_path_in_order: " << PTO.is_path_in_order(A) << std::endl; 
+// 	if (!check_path(A))
+// 	{
+// 		std::cout << "SHIT! path is not correct!" << std::endl;
+// 		throw;
+// 	} else
+// 	{
+// 		std::cout << "Good path of value " << A.value()  << std::endl;
+// 	}
+	
+// 	return;
 	PTO.open_edges_until_no_more_improvement_found();
 
 // 	std::cout << "After opening edges, PTO.Value() = " << PTO.Value() << std::endl;
 
 	A = PTO.get_path();
+// 	if (!check_path(A))
+// 	{
+// 		std::cout << "SHIT! path is not correct!" << std::endl;
+// 		throw;
+// 	} else
+// 	{
+// 		std::cout << "Good path!" << std::endl;
+// 	}
 }
 
 size_t DiGraph::num_edges() const
@@ -393,7 +463,7 @@ DiGraph DiGraph::with_nodes_removed(std::vector<node_t>& toRemove) const
 
 	DiGraph D(new_names);
 
-	for (node_t v = 0; v < new_n; ++v)
+	for (size_t v = 0; v < new_n; ++v)
 	{
 		auto oldv = removalfunctioninverse[v];
 
@@ -416,7 +486,11 @@ void DiGraph::dfs_search_path_forward(Path& P, double maxnumseconds) const
 {
 	ExpandGreedyBack(*this, P);
 // 	std::cout << "(" << ChronometerPeek() << ", " << P.Value() << ")," << std::endl;
-
+	if (P.value() > global_best)
+	{
+		global_best = P.value();
+		std::cout << "Found DFS improvement at " << global_chrono.Peek() << " to " << global_best << std::endl;
+	}
 	Chronometer C;
 	Path Q = P;
 	auto comp = [this](node_t a, node_t b)
@@ -438,18 +512,20 @@ void DiGraph::dfs_search_path_forward(Path& P, double maxnumseconds) const
 
 void DiGraph::dfs_search_path_backward(Path& P, double maxnumseconds) const
 {
+// 	using namespace std;
+// 	cout << "size of P is " << P.size() << endl;
 	ExpandGreedyBack(*this, P);
-// 	std::cout << "(" << ChronometerPeek() << ", " << P.Value() << ")," << std::endl;
-
 	Path Q = P;
 	auto comp = [this](node_t a, node_t b)
 	{
 		return in_compare(a, b);
 	};
 
+// 	cout << "m1.5" << endl;
 	Chronometer C;
 	while (C.Peek() < maxnumseconds && dfs_innext(*this, Q, comp))
 	{
+// 		cout << "m2" << endl;
 		if (Q.value() > P.value())
 		{
 			P = Q;
@@ -458,6 +534,7 @@ void DiGraph::dfs_search_path_backward(Path& P, double maxnumseconds) const
 // 			std::cout << P.value()/2 << std::endl;
 		}
 	}
+// 	cout << "m3" << endl;
 }
 
 Path DiGraph::dfs_search_path_forward(node_t start, double maxnumseconds) const
@@ -536,13 +613,9 @@ void DiGraph::heuristic_processing()
 	m_basic_topological_ordering_in = range<node_t>(m_n);
 	sort(m_basic_topological_ordering_in.begin(), m_basic_topological_ordering_in.end(), [this](node_t a, node_t b) -> bool
 	{
-		if (rank_in(a) > rank_in(b))
+		if (rank_in(a) != rank_in(b))
 		{
-			return false;
-		}
-		if (rank_in(a) < rank_in(b))
-		{
-			return true;
+			return rank_in(a) < rank_in(b);
 		}
 
 
@@ -575,19 +648,23 @@ void DiGraph::heuristic_processing()
 	}
 
 
-	for (size_t i = 0; i < m_n; ++i)
+	for (auto& out : m_outgraph)
 	{
-		sort(m_outgraph[i].begin(), m_outgraph[i].end(), [this](node_t a, node_t b) -> bool
+		sort(out.begin(), out.end(), [this](node_t a, node_t b) -> bool
 		{
 			return ex_compare(a, b);
 		});
 
-		sort(m_ingraph[i].begin(), m_ingraph[i].end(), [this](node_t a, node_t b) -> bool
+	}
+	
+	for (auto& in : m_ingraph)
+	{
+		sort(in.begin(), in.end(), [this](node_t a, node_t b) -> bool
 		{
 			return in_compare(a, b);
 		});
-	}
 
+	}
 }
 
 void DiGraph::DFSUtil(node_t v, std::vector<bool>& visited)
@@ -1044,3 +1121,10 @@ void ExpandGreedyFront(const DiGraph& G, Path& P)
 		P.emplace_front(t, t.Weight());
 	}
 }
+
+// std::vector<DiGraph> DiGraph::StronglyConnectedInducedGraphs()
+// {
+// 	process();
+// 	
+// 	
+// }

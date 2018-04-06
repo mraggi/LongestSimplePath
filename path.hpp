@@ -12,11 +12,11 @@ using node_t = int;
 
 const node_t INVALID_NODE = -1;
 
-using weight_t = long;
+using weight_t = int;
 
 // something larger than weight_t for when you have that weight_t doesn't properly hold a sum of weight_t
 using sumweight_t = int;
-const sumweight_t INF = 200000000;
+const sumweight_t INF = 1000000000;
 
 struct NeighborNode
 {
@@ -54,9 +54,9 @@ public:
     const std::deque<NeighborNode>& get_path() const { return m_path; }
     inline operator const std::deque<NeighborNode>&() const { return m_path; }
 //     inline operator vector<NeighborNode>&()  { return m_path; }
-    long value() const { return m_value; }
-    long cost() const { return m_value; }
-    long weight() const { return m_value; }
+    sumweight_t value() const { return m_value; }
+    sumweight_t cost() const { return m_value; }
+    sumweight_t weight() const { return m_value; }
     
     bool is_node_in_path(node_t v) const
 	{
@@ -205,7 +205,7 @@ private:
     std::deque<NeighborNode> m_path;
     std::vector<char> m_explored;
 //     std::vector<bool> m_explored;
-    long m_value;
+    sumweight_t m_value;
 public:
     const decltype(m_path)& data() const { return m_path; }
 
