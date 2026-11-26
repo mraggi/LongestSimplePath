@@ -1,7 +1,8 @@
 // Command line interface.
 //
-//   lsp solve GRAPH [--format F] [--method M] [--time T] [--seed S] [--source V]
+//   lsp solve GRAPH [--format F] [--preset P] [--method M] [--time T] [--seed S] [--source V]
 //                   [--set key=value]... [--path-out FILE] [--print-path]
+//   (default: preset newap, 10 s; --time 0 = no limit)
 //   lsp info  GRAPH [--format F]
 //   lsp convert GRAPH OUT [--format F]      (writes the 0-based edge-list format)
 //
@@ -17,8 +18,9 @@ namespace {
 void usage()
 {
     std::cerr << "usage:\n"
-                 "  lsp solve GRAPH [--format F] [--preset 2018|new|newap] [--method classic|ils|rdfs|greedy|gamm] [--time T] [--seed S]\n"
+                 "  lsp solve GRAPH [--format F] [--preset newap|new|2018] [--method classic|ils|rdfs|greedy|gamm] [--time T] [--seed S]\n"
                  "            [--source V] [--set key=value]... [--path-out FILE] [--print-path]\n"
+                 "            (defaults: --preset newap --time 10 --seed 1; --time 0 = no limit)\n"
                  "  lsp info GRAPH [--format F]\n"
                  "  lsp ap GRAPH [--format F] [--source V] [--path-out FILE]   (assignment bound + patched path only)\n"
                  "  lsp convert GRAPH OUT [--format F]\n";

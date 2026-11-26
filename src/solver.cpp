@@ -88,6 +88,12 @@ std::string str(const T& x)
 
 } // namespace
 
+SolverOptions::SolverOptions() : SolverOptions(Base2018{})
+{
+    apply_preset("newap");
+    time_limit = kDefaultTimeLimit;
+}
+
 void SolverOptions::apply_preset(const std::string& name)
 {
     if (name != "2018" && name != "new" && name != "newap")
@@ -96,7 +102,7 @@ void SolverOptions::apply_preset(const std::string& name)
     const double t = time_limit;
     const std::uint64_t s = seed;
     const Vertex src = source;
-    *this = SolverOptions{};
+    *this = SolverOptions(Base2018{});
     time_limit = t;
     seed = s;
     source = src;

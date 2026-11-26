@@ -346,6 +346,7 @@ TEST(Solver, AllMethodsReturnValidPathsAndClassicIsOptimalOnTinyGraphs)
         for (const std::string m : {"classic", "ils", "rdfs", "greedy", "gamm"})
         {
             SolverOptions o;
+            o.apply_preset("2018");
             o.method = m;
             o.seed = static_cast<std::uint64_t>(t);
             o.largest_wcc_only = false;
@@ -377,6 +378,8 @@ TEST(Solver, RootedVariantStartsAtSource)
         auto g = random_digraph(n, 0.4, rng);
         const auto s = static_cast<Vertex>(rng.below(n));
         SolverOptions o;
+        o.apply_preset("2018");
+        o.time_limit = 0;
         o.source = s;
         o.dfs_stop = {0, 5000};
         o.pto_stop = {0, 3};
@@ -393,6 +396,8 @@ TEST(Solver, WorkBasedRunsAreDeterministic)
     Rng rng(1);
     auto g = random_digraph(300, 0.01, rng, 20);
     SolverOptions o;
+    o.apply_preset("2018");
+    o.time_limit = 0;
     o.seed = 77;
     o.dfs_stop = {0, 3000};
     o.pto_stop = {0, 2};
@@ -419,6 +424,26 @@ TEST(Options, PresetsKeepTimeSeedAndSource)
         EXPECT_EQ(o.source, 3) << p;
         EXPECT_EQ(o.opener.border, p != "2018" ? BOrderRule::DfsPostorder : BOrderRule::HeuristicFirst) << p;
     }
+}
+
+TEST(Options, DefaultIsNewapWithTimeLimit)
+{
+    const SolverOptions d;
+    SolverOptions n;
+    n.apply_preset("newap");
+    n.time_limit = SolverOptions::kDefaultTimeLimit;
+    EXPECT_EQ(d.describe(), n.describe());
+    EXPECT_EQ(d.method, "ils");
+    EXPECT_TRUE(d.ap_init);
+    EXPECT_FALSE(d.largest_wcc_only);
+    EXPECT_GT(d.time_limit, 0);
+    SolverOptions o;
+    o.apply_preset("2018"); // the 2016-2018 method is still available
+    EXPECT_EQ(o.method, "classic");
+    EXPECT_FALSE(o.ap_init);
+    EXPECT_TRUE(o.largest_wcc_only);
+    EXPECT_EQ(o.opener.border, BOrderRule::HeuristicFirst);
+    EXPECT_EQ(o.time_limit, SolverOptions::kDefaultTimeLimit); // presets keep the time limit
 }
 
 TEST(Ordering, HeavyFirstDoesNotChangeUnitWeightRuns)

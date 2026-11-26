@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-11-26
+* The default of `lsp solve` and of a default-constructed `SolverOptions` is now the best method, `--preset newap`, with a time limit of 10 s (`--time 0`: no limit). The 2016–2018 method remains available as `--preset 2018`; before this change it was the default.
+
 ## 2026: C++20 rewrite
 
 The code was rewritten from scratch in C++20. The 2016–2018 version is in the git history (last commit 7bc5804).

@@ -12,11 +12,13 @@ Rooted variant (`--source s`): paths must start at s. The graph is restricted to
 
 ## Presets
 
-`--preset 2018` (the defaults; method `classic`, faithful to the 2018 version of this code, commit 7bc5804), `--preset new` (the iterated local search: `method=ils`, `border=dfs`, `heavy_first=1`, `symmetric_in=1`, `in_score_typo=0`, `faithful_backward_greedy=0`, `largest_wcc=0`, `skip_block=1`, `min_free=1`, `dfs_steps=100000` without time rule, `pto_passes=3` without time rule) and `--preset newap` (= `new` + `ap_init=1`; recommended). A preset resets all algorithmic options but keeps `--time`, `--seed` and `--source`; put it before any `--set`.
+`--preset newap` (**the default**, with `--time 10`) = `--preset new` + `ap_init=1`. `--preset new` (the iterated local search alone): `method=ils`, `border=dfs`, `heavy_first=1`, `symmetric_in=1`, `in_score_typo=0`, `faithful_backward_greedy=0`, `largest_wcc=0`, `skip_block=1`, `min_free=1`, `dfs_steps=100000` without time rule, `pto_passes=3` without time rule. `--preset 2018`: method `classic` with the values of the table below, faithful to the 2018 version of this code (commit 7bc5804). A preset resets all algorithmic options but keeps `--time`, `--seed` and `--source`; put it before any `--set`.
 
-## Options (`--set key=value`, defaults = 2018 behaviour)
+## Options (`--set key=value`)
 
-| key | default | meaning |
+The column gives the value under `--preset 2018`; the presets `new` and `newap` change only the keys listed above.
+
+| key | 2018 value | meaning |
 |---|---|---|
 | `largest_wcc` | 1 | keep only the largest weakly connected component (2018) |
 | `rank` / `degree_rules` | 1 / 1 | rules 1 and 2–3 of the vertex orders |

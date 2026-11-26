@@ -18,14 +18,14 @@ ninja -C build
 ## Usage
 
 ```sh
-./build/lsp solve graph.el --preset newap --time 60 --path-out best.path   # search for 60 s, write the best path
-./build/lsp solve graph.el --preset newap --time 60 --source 0             # paths must start at vertex 0
-./build/lsp ap graph.el                                                    # only the upper bound and the fast initial path
-./build/lsp info graph.el                                                  # size, strong components, condensation depth
-./build/lsp_check graph.el best.path                                       # verify a path file
+./build/lsp solve graph.el --path-out best.path       # search for 10 s (the default), write the best path
+./build/lsp solve graph.el --time 60 --source 0        # search for 60 s; paths must start at vertex 0
+./build/lsp ap graph.el                                # only the upper bound and the fast initial path
+./build/lsp info graph.el                              # size, strong components, condensation depth
+./build/lsp_check graph.el best.path                   # verify a path file
 ```
 
-`--preset newap` is the recommended method (without `--preset`, `lsp` runs the 2018 method). The search stops at the time limit, or earlier if the path reaches the upper bound (then it is optimal). Always give `--time` with `newap`: the default, 0, means no limit. `--seed S` (default 1) fixes the random choices.
+The search stops at the time limit (`--time`, default 10 s; `--time 0` means no limit), or earlier if the path reaches the upper bound, which proves it optimal. `--seed S` (default 1) fixes the random choices.
 
 **Input.** By default an edge list with 0-based vertices: a header line `n m`, then one line `u v [w]` per arc (weight 1 if omitted). Other formats, with `--format`:
 * `adjlist`: the 1-based adjacency lists of Farnebäck's [Go Game Graphs](https://github.com/GunnarFarneback/GoGameGraphs);
@@ -42,7 +42,7 @@ Parallel arcs are merged (keeping the maximum weight) and loops are ignored.
 * timings and counters;
 * with `--print-path`, the path itself.
 
-**Methods.** Alternatives to `--preset newap`:
+**Methods.** The default is the best method of this program, `--preset newap`: the assignment relaxation followed by the local search (see [How it works](#how-it-works)). Alternatives:
 
 | option | what it is |
 |---|---|
@@ -59,7 +59,7 @@ Every component can be switched with `--set key=value`; see [`docs/OPTIONS.md`](
 
 lsp::Digraph g(6, {{0, 1, 3}, {1, 2, 2}, {2, 0, 4}, {2, 3, 1}, {3, 4, 5}, {1, 4, 1}, {4, 5, 2}, {5, 3, -1}});
 lsp::SolverOptions opt;
-opt.apply_preset("newap");
+// default-constructed options are the recommended method (preset "newap"), 10 s
 opt.time_limit = 1;             // seconds
 // opt.source = 0;              // paths must start at vertex 0
 lsp::SolveResult res = lsp::solve(g, opt);

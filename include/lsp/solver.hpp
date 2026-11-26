@@ -17,8 +17,14 @@ enum class PtoMode
 
 struct SolverOptions
 {
+    // A default-constructed SolverOptions is the recommended method (preset "newap") with a time
+    // limit of kDefaultTimeLimit seconds. The member initializers below are the values of preset
+    // "2018" (faithful to the 2016-2018 code); every preset starts from them (apply_preset).
+    SolverOptions();
+    static constexpr double kDefaultTimeLimit = 10;
+
     std::string method = "classic"; // classic | ils | rdfs | greedy | gamm
-    double time_limit = 0;           // seconds (0 = no limit)
+    double time_limit = 0;           // seconds (0 = no limit); kDefaultTimeLimit when default-constructed
     std::uint64_t seed = 1;
     Vertex source = kNoVertex;       // rooted variant: paths must start here
     bool largest_wcc_only = true;    // 2018 keeps only the largest weakly connected component
@@ -59,14 +65,20 @@ struct SolverOptions
     double ga_elite = 0.05;
     int ga_stagnation = 15;                  // generations without improvement before restarting
 
-    // Presets: "2018" (the defaults: faithful to code_2018), "new" (the improved method of
-    // the 2026 paper: anytime ILS, DFS post-order ordering of B, symmetric orders, work-based
-    // stopping rules, no restriction to the largest weak component) and "newap" ("new" plus the
-    // assignment-relaxation opening, ap_init=1).
+    // Presets: "newap" (the default: "new" plus the assignment-relaxation opening, ap_init=1),
+    // "new" (anytime ILS, DFS post-order ordering of B, symmetric orders, work-based stopping
+    // rules, no restriction to the largest weak component) and "2018" (faithful to the 2016-2018
+    // code). A preset resets the algorithmic options and keeps time_limit, seed and source.
     void apply_preset(const std::string& name);
     // Applies "key=value"; throws on unknown keys.
     void set(const std::string& key, const std::string& value);
     [[nodiscard]] std::map<std::string, std::string> describe() const;
+
+private:
+    struct Base2018
+    {
+    };
+    explicit SolverOptions(Base2018) {} // the member initializers: preset "2018"
 };
 
 struct TrajectoryPoint
