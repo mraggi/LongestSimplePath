@@ -2,7 +2,7 @@
 
 ## Methods (`--method`)
 
-* `classic` — the 2018 schedule (paper v3 + code): 10 parameter sets; for each, forward DFS from 5 starts (ranked/random alternating) + erase 16 + backward DFS, then a PTO search; the same backward; a final PTO search. DFS runs stop after 0.1 s without improvement, PTO searches after 4 s without improvement (both configurable, also as work counts). It does **not** reproduce the 2018 reporting bugs (see the main README); everything else is faithful, including the quirks that can be switched off (`symmetric_in`, `in_score_typo`, `faithful_backward_greedy`, `largest_wcc`).
+* `classic` — the 2018 schedule (paper v3 + code): 10 parameter sets; for each, forward DFS from 5 starts (ranked/random alternating) + erase 16 + backward DFS, then a PTO search; the same backward; a final PTO search. DFS runs stop after 0.1 s without improvement, PTO searches after 4 s without improvement (both configurable, also as work counts). It does **not** reproduce the 2018 reporting bugs (see `CHANGELOG.md`); everything else is faithful, including the quirks that can be switched off (`symmetric_in`, `in_score_typo`, `faithful_backward_greedy`, `largest_wcc`).
 * `ils` — anytime iterated local search built from the same components: DFS construction, PTO improvement, then repeatedly keep a random window of the incumbent (`ils_keep` fraction), re-extend it by DFS both ways and re-run the PTO search; accept if not worse. Runs until `--time` (or `ils_rounds` rounds). With `ap_init=1` it first solves the assignment relaxation, patches its cycles into a path, starts from that path if it is better than the DFS start, and stops as soon as a path reaches the certified bound.
 * `rdfs` — baseline: randomized DFS with random adjacency order and restarts from random vertices after `rdfs_steps` (default 10n) steps without improvement.
 * `greedy` — baseline: repeated randomized Warnsdorff greedy (choose the free neighbour with fewest free continuations; dead ends last; heaviest arc first on weighted graphs), extending the tail and then the head.
@@ -12,7 +12,7 @@ Rooted variant (`--source s`): paths must start at s. The graph is restricted to
 
 ## Presets
 
-`--preset 2018` (the defaults; method `classic`, faithful to the code in `legacy_2018/`), `--preset new` (the iterated local search: `method=ils`, `border=dfs`, `heavy_first=1`, `symmetric_in=1`, `in_score_typo=0`, `faithful_backward_greedy=0`, `largest_wcc=0`, `skip_block=1`, `min_free=1`, `dfs_steps=100000` without time rule, `pto_passes=3` without time rule) and `--preset newap` (= `new` + `ap_init=1`; recommended). A preset resets all algorithmic options but keeps `--time`, `--seed` and `--source`; put it before any `--set`.
+`--preset 2018` (the defaults; method `classic`, faithful to the 2018 version of this code, commit 7bc5804), `--preset new` (the iterated local search: `method=ils`, `border=dfs`, `heavy_first=1`, `symmetric_in=1`, `in_score_typo=0`, `faithful_backward_greedy=0`, `largest_wcc=0`, `skip_block=1`, `min_free=1`, `dfs_steps=100000` without time rule, `pto_passes=3` without time rule) and `--preset newap` (= `new` + `ap_init=1`; recommended). A preset resets all algorithmic options but keeps `--time`, `--seed` and `--source`; put it before any `--set`.
 
 ## Options (`--set key=value`, defaults = 2018 behaviour)
 
